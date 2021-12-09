@@ -3,9 +3,13 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const { createBullBoard } = require('bull-board')
+const { BullAdapter } = require('bull-board/bullAdapter')
+
 require('dotenv').config();
 
 var indexRouter = require('./routes/index');
+var { contractQueue } = require("./utill/contractQueue");
 
 var app = express();
 
@@ -13,6 +17,11 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBoard([
+  new BullAdapter(contractQueue),
+])
+app.use('/admin/bullui', router);
 
 app.use('/', indexRouter);
 
