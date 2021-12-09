@@ -12,8 +12,8 @@ module.exports = {
     },
     matic: {
       // url: "https://polygon-rpc.com",
-      // url: "https://rpc-mumbai.matic.today",
-      url: 'https://matic-mumbai.chainstacklabs.com',
+      url: "https://rpc-mumbai.matic.today",
+      // url: 'https://matic-mumbai.chainstacklabs.com',
       accounts: [PRIVATE_KEY],
       gasPrice: 8000000000,
     }

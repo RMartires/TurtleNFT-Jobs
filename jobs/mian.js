@@ -2,8 +2,12 @@ const hre = require("hardhat");
 const { Promise } = require('bluebird');
 const { createContract } = require('./utill/createContract');
 const { pinJSON } = require('./utill/pinJSON');
+const config = require('./utill/config.json');
 
 async function processContract(data, job) {
+    hre.config.networks.matic.url = config[data.contract.blockchain];
+    console.log(config[data.contract.blockchain]);
+
     await createContract(data.filename, data.contract.contractName, data.contract.contractSymbol);
     await hre.run("compile");
     const NFT = await hre.ethers.getContractFactory(data.contract.contractName);
