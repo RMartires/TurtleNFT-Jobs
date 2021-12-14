@@ -25,6 +25,7 @@ contractQueue.process(async function (job, done) {
         let admin = await getDoc(doc(db, "admins", `${job.data.user}.myshopify.com`));
         if (!admin.exists()) throw new Error(`Error: admin ${job.data.user} does not exist`);
         admin = admin.data();
+        if (!admin.wallet) throw new Error("No wallet connected");
         let userWallet = admin.wallet;
 
         const deployedData = await processContract({
@@ -66,7 +67,8 @@ contractQueue.process(async function (job, done) {
             tags: ["NFT"],
             variants: variants,
             tokenIds: tokenIds,
-            total: tokenIds.length
+            total: tokenIds.length,
+            contractDocName: job.data.filename
         });
         console.log("done");
 

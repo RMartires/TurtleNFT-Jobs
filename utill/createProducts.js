@@ -132,7 +132,7 @@ exports.createProducts = async (data) => {
         });
     }, { concurrency: 5 });
 
-    await updateDoc(doc(db, "contracts", data.contractName), {
+    await updateDoc(doc(db, "contracts", data.contractDocName), {
         deployedStatus: 'minted'
     });
 
