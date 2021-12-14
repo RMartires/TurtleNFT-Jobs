@@ -22,6 +22,7 @@ const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBo
   new BullAdapter(contractQueue),
 ])
 app.use('/admin/bullui', router);
+app.use('/nft/admin/bullui', router);
 
 app.use('/', indexRouter);
 

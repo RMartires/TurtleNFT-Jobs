@@ -4,8 +4,15 @@ const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { db } = require('../utill/db');
 const { processContract } = require("../jobs/mian");
+const { default: axios } = require('axios');
 
 const contractQueue = new Queue('Contract', 'redis://127.0.0.1:6379');
+
+
+const blockScans = {
+    "polygonTestnet": "https://mumbai.polygonscan.com/address/",
+    "polygonMainnet": "https://polygonscan.com/address/"
+};
 
 contractQueue.process(async function (job, done) {
     console.log(job.data);
@@ -40,6 +47,10 @@ contractQueue.process(async function (job, done) {
             });
         });
 
+        console.log("creating products");
+        await createProduct(job, contract, deployedData);
+        console.log("done");
+
         job.progress(100);
         done();
     } catch (err) {
@@ -47,5 +58,34 @@ contractQueue.process(async function (job, done) {
         done();
     }
 });
+
+async function createProduct(job, contract, deployedData) {
+    let tokenIds = deployedData.deployedTokens.map(x => x.tokenId);
+    let variants = contract.tokens.map(x => ({
+        title: x.title,
+        image: `https://ipfs.io/ipfs/${x.image}`,
+        number: x.number,
+        price: x.price
+    }));
+    await axios({
+        method: 'POST',
+        url: `${process.env.HOST}/api/createProducts`,
+        data: {
+            shop: `${job.data.user}.myshopify.com`,
+            body_html: `<h2>${job.data.contractName}</h2>
+                <h4>Contract Address: ${deployedData.contractAddress}</h4>
+                <h4>link: <a herf="${blockScans[contract.blockchain]}${deployedData.contractAddress}" target="_blank">
+                polygonScan</a></h4>`,
+            title: job.data.contractName,
+            tags: ["NFT"],
+            variants: variants,
+            tokenIds: tokenIds,
+            total: tokenIds.length
+        }
+    });
+
+    return;
+}
+
 
 exports.contractQueue = contractQueue;
