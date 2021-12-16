@@ -10,12 +10,15 @@ async function processContract(data, job) {
 
     await createContract(data.filename, data.contract.contractName, data.contract.contractSymbol);
     await hre.run("compile");
+    job.log("Contract Compiled");
     const NFT = await hre.ethers.getContractFactory(data.contract.contractName);
     const nft = await NFT.deploy();
     await nft.deployed();
     console.log("NFT deployed to:", nft.address);
+    job.log(`NFT deployed to: ${nft.address}`);
 
     console.log("Creating metadata");
+    job.log("Creating metadata");
     let tokenId = 100;
     let tokensToMint = [];
     let ipfsArr = await Promise.map(data.contract.tokens, (token) => {
@@ -39,9 +42,12 @@ async function processContract(data, job) {
     });
 
     console.log("starting to mint");
+    job.log("starting to mint");
     let contract = NFT.attach(nft.address);
+    let count = 1;
     let mintedTokens = await Promise.map(tokensToMint, (token, tdx) => {
-        let progress = (tdx + 1) / tokensToMint.length;
+        let progress = (count) / tokensToMint.length;
+        count += 1;
         return mintToken(contract, { ...token, userWallet: data.userWallet }, job, progress);
     }, { concurrency: 1 });
 
@@ -56,12 +62,15 @@ async function mintToken(contract, data, job, progress) {
     let tx = await contract.createNFT(data.userWallet, data.URL, data.tokenId);
     console.log("tx, nonce:", tx.nonce);
     console.log("tx, hash:", tx.hash);
+    job.log(`tx, nonce: ${tx.nonce}`);
+    job.log(`tx, hash: ${tx.hash}`);
     let txHash = tx.hash;
     let tokenID = await new Promise((res, rej) => {
         contract.on("ValueChanged", (author, newValue, event) => {
             res(parseInt(newValue._hex));
         });
     });
+    if (Math.round(progress * 100) === 100) progress = 0.9;
     job.progress(Math.round(progress * 100));
 
     return { txHash: txHash }

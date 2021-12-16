@@ -18,7 +18,6 @@ const blockScans = {
 contractQueue.process(async function (job, done) {
     console.log(job.data);
     try {
-
         let contract = await getDoc(doc(db, "contracts", job.data.filename));
         if (!contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         contract = contract.data();
@@ -50,6 +49,7 @@ contractQueue.process(async function (job, done) {
         });
 
         console.log("creating products");
+        job.log("creating products");
         let tokenIds = deployedData.deployedTokens.map(x => x.tokenId);
         let variants = contract.tokens.map(x => ({
             title: x.title,
@@ -71,12 +71,12 @@ contractQueue.process(async function (job, done) {
             contractDocName: job.data.filename
         });
         console.log("done");
-
+        job.log("done");
         job.progress(100);
         done();
     } catch (err) {
         console.log(err);
-        done();
+        done(new Error(err.message));
     }
 });
 
