@@ -10,6 +10,7 @@ require('dotenv').config();
 
 var indexRouter = require('./routes/index');
 var { contractQueue } = require("./utill/contractQueue");
+var { ordersQueue } = require("./utill/ordersQueue");
 
 var app = express();
 
@@ -20,7 +21,9 @@ app.use(cookieParser());
 
 const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBoard([
   new BullAdapter(contractQueue),
-])
+  new BullAdapter(ordersQueue)
+]);
+
 app.use('/admin/bullui', router);
 app.use('/nft/admin/bullui', router);
 
