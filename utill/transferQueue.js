@@ -37,7 +37,8 @@ transferQueue.process(async function (job, done) {
         });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
-            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].hash }))
+            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].hash })),
+            progress: 'transfered'
         });
 
         console.log("done");
