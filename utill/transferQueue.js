@@ -33,7 +33,7 @@ transferQueue.process(async function (job, done) {
         let ipfsArr = await Promise.map(order.tokens, (token) => {
             return pinJSON({
                 filename: token.filename,
-                data: token.metaData
+                data: token.tokenMeta
             });
         });
 
