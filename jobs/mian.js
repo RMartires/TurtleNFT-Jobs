@@ -1,7 +1,7 @@
+const fs = require('fs/promises');
 const hre = require("hardhat");
 const { Promise } = require('bluebird');
 const { createContract } = require('./utill/createContract');
-const { pinJSON } = require('./utill/pinJSON');
 const config = require('./utill/config.json');
 
 async function processContract(data, job) {
@@ -17,12 +17,14 @@ async function processContract(data, job) {
     console.log("NFT deployed to:", nft.address);
     job.log(`NFT deployed to: ${nft.address}`);
 
+    await fs.unlink(`${__dirname}/../contracts/${data.filename}.sol`);
+
     console.log("Creating metadata");
     job.log("Creating metadata");
     let tokenId = 100;
     let tokensToMint = [];
-    let ipfsArr = await Promise.map(data.contract.tokens, (token) => {
-        return pinJSON({
+    let ipfsArr = data.contract.tokens.map(token => {
+        return ({
             filename: token.title,
             data: {
                 Title: token.title,
@@ -30,50 +32,34 @@ async function processContract(data, job) {
                 URL: `ipfs://${token.image}`
             }
         });
-    }, { concurrency: 5 });
+    });
     data.contract.tokens.forEach((token, tdx) => {
         for (var i = 0; i < token.number; i++) {
             tokensToMint.push({
-                URL: `ipfs://${ipfsArr[tdx]}`,
+                metaData: ipfsArr[tdx].data,
+                filename: ipfsArr[tdx].filename,
                 tokenId: tokenId
             });
             tokenId += 1;
         }
     });
 
-    console.log("starting to mint");
-    job.log("starting to mint");
-    let contract = NFT.attach(nft.address);
-    let count = 1;
-    let mintedTokens = await Promise.map(tokensToMint, (token, tdx) => {
-        let progress = (count) / tokensToMint.length;
-        count += 1;
-        return mintToken(contract, { ...token, userWallet: data.userWallet }, job, progress);
-    }, { concurrency: 1 });
-
-    let deployedTokens = tokensToMint.map((token, tdx) => ({ ...token, ...mintedTokens[tdx] }));
-
-    console.log("done minting");
-    return { deployedTokens: deployedTokens, contractAddress: nft.address }
+    return { tokensToMint: tokensToMint, contractAddress: nft.address }
 }
 
-async function mintToken(contract, data, job, progress) {
+// async function mintToken(contract, data) {
 
-    let tx = await contract.createNFT(data.userWallet, data.URL, data.tokenId);
-    console.log("tx, nonce:", tx.nonce);
-    console.log("tx, hash:", tx.hash);
-    job.log(`tx, nonce: ${tx.nonce}`);
-    job.log(`tx, hash: ${tx.hash}`);
-    let txHash = tx.hash;
-    let tokenID = await new Promise((res, rej) => {
-        contract.on("ValueChanged", (author, newValue, event) => {
-            res(parseInt(newValue._hex));
-        });
-    });
-    if (Math.round(progress * 100) === 100) progress = 0.9;
-    job.progress(Math.round(progress * 100));
+//     let tx = await contract.createNFT(data.userWallet, data.URL, data.tokenId);
+//     console.log("tx, nonce:", tx.nonce);
+//     console.log("tx, hash:", tx.hash);
+//     let txHash = tx.hash;
+//     let tokenID = await new Promise((res, rej) => {
+//         contract.on("ValueChanged", (author, newValue, event) => {
+//             res(parseInt(newValue._hex));
+//         });
+//     });
 
-    return { txHash: txHash }
-}
+//     return { txHash: txHash }
+// }
 
 exports.processContract = processContract;

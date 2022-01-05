@@ -15,31 +15,32 @@ const blockScans = {
     "polygonMainnet": "https://polygonscan.com/address/"
 };
 
+const blockchains = {
+    "polygonTestnet": "Polygon Testnet",
+    "polygonMainnet": "Polygon"
+};
+
+
 contractQueue.process(async function (job, done) {
     console.log(job.data);
     try {
         let contract = await getDoc(doc(db, "contracts", job.data.filename));
         if (!contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         contract = contract.data();
-        let admin = await getDoc(doc(db, "admins", `${job.data.user}.myshopify.com`));
-        if (!admin.exists()) throw new Error(`Error: admin ${job.data.user} does not exist`);
-        admin = admin.data();
-        if (!admin.wallet) throw new Error("No wallet connected");
-        let userWallet = admin.wallet;
 
         const deployedData = await processContract({
             contract: contract,
-            userWallet: userWallet,
             filename: job.data.filename
         }, job);
         await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
             ...deployedData,
         });
+        job.progress(50);
 
         const contractArtifact =
             await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
         const storage = getStorage();
-        const storageRef = ref(storage, `artifacts/${job.data.contractName}.json`);
+        const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
         await new Promise((res, rej) => {
             uploadBytes(storageRef, contractArtifact).then((snapshot) => {
                 res("Done");
@@ -50,7 +51,7 @@ contractQueue.process(async function (job, done) {
 
         console.log("creating products");
         job.log("creating products");
-        let tokenIds = deployedData.deployedTokens.map(x => x.tokenId);
+        let tokenIds = deployedData.tokensToMint.map(x => x.tokenId);
         let variants = contract.tokens.map(x => ({
             title: x.title,
             image: `https://ipfs.io/ipfs/${x.image}`,
@@ -60,9 +61,10 @@ contractQueue.process(async function (job, done) {
         await createProducts({
             shop: `${job.data.user}.myshopify.com`,
             body_html: `<h2>${job.data.contractName}</h2>
+                <h4>Symbol: ${contract.contractSymbol}</h4>
                 <h4>Contract Address: ${deployedData.contractAddress}</h4>
-                <h4>link: <a herf="${blockScans[contract.blockchain]}${deployedData.contractAddress}" target="_blank">
-                polygonScan</a></h4>`,
+                <h4>Blockchain: ${blockchains[contract.blockchain]}</h4>
+                `,
             title: job.data.contractName,
             tags: ["NFT"],
             variants: variants,

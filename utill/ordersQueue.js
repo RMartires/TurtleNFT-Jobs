@@ -72,11 +72,12 @@ async function createOrder(items, shop, orderId) {
     contracts = contracts.map(con => con.data());
     let newItems = [];
     items.forEach((item, idx) => {
-        let token = contracts[idx].deployedTokens.filter(x => `#${x.tokenId}` == item.variant_title)[0];
+        let token = contracts[idx].tokensToMint.filter(x => `#${x.tokenId}` == item.variant_title)[0];
         newItems.push({
             name: item.name,
             price: item.price,
-            tokenMeta: token.URL,
+            tokenMeta: token.metaData,
+            filename: token.filename,
             contractAddress: contracts[idx].contractAddress,
             tokenId: token.tokenId,
             contractName: contracts[idx].contractName,

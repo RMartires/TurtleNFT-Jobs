@@ -1,6 +1,7 @@
 const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
 const { collection, query, where, getDocs, updateDoc, doc } = require("firebase/firestore");
 const { Promise } = require('bluebird');
+const axios = require('axios');
 const { db } = require('./db');
 
 Shopify.Context.initialize({
@@ -17,6 +18,9 @@ Shopify.Context.initialize({
 
 
 const uploadImage = async (client, data) => {
+    // let response = await axios.get(data.src);
+    // let baseData = "data:" + response.headers["content-type"] + ";base64," + Buffer.from(response.data).toString('base64');
+    // console.log(baseData);
     let r = await client.post({
         path: `products/${data.id}/images`,
         data: { "image": { "src": data.src } },
