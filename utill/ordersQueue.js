@@ -50,7 +50,7 @@ ordersQueue.process(async function (job, done) {
                 const orderData = await createOrder(job.data.items, job.data.shop, job.data.id);
                 await axios({
                     method: 'POST',
-                    URL: `${process.env.FUNCTIONS}/sendOrderEmail`,
+                    url: `${process.env.FUNCTIONS}/sendOrderEmail`,
                     data: {
                         buyer: job.data.buyer,
                         order: {
@@ -68,7 +68,7 @@ ordersQueue.process(async function (job, done) {
                 });
                 await axios({
                     method: 'POST',
-                    URL: `${process.env.FUNCTIONS}/sendRiskAlertEmail`,
+                    url: `${process.env.FUNCTIONS}/sendRiskAlertEmail`,
                     data: {
                         shop: {
                             shop: job.data.shop,
