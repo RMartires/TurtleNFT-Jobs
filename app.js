@@ -11,6 +11,7 @@ require('dotenv').config();
 var indexRouter = require('./routes/index');
 var { contractQueue } = require("./utill/contractQueue");
 var { ordersQueue } = require("./utill/ordersQueue");
+var { transferQueue } = require("./utill/transferQueue");
 
 var app = express();
 
@@ -21,7 +22,8 @@ app.use(cookieParser());
 
 const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBoard([
   new BullAdapter(contractQueue),
-  new BullAdapter(ordersQueue)
+  new BullAdapter(ordersQueue),
+  new BullAdapter(transferQueue)
 ]);
 
 app.use('/admin/bullui', router);
