@@ -6,6 +6,7 @@ const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { Promise } = require("bluebird");
 const generator = require("generate-password");
 const { v4 } = require("uuid");
+const axios = require("axios");
 const { db } = require('../utill/db');
 
 Shopify.Context.initialize({
@@ -39,15 +40,43 @@ ordersQueue.process(async function (job, done) {
                 items: job.data.items,
                 id: job.data.id,
                 shop: job.data.shop,
-                att: (job.data.att + 1)
+                att: (job.data.att + 1),
+                buyer: job.data.buyer
             }, { delay: job.data.att > 5 ? (60000 * 3) : 30000 }); // 3 mins or 30 secs
             done();
             return null;
         } else {
             if (risks[0].recommendation == 'accept') {
-                await createOrder(job.data.items, job.data.shop, job.data.id);
+                const orderData = await createOrder(job.data.items, job.data.shop, job.data.id);
+                await axios({
+                    method: 'POST',
+                    URL: `${process.env.FUNCTIONS}/sendOrderEmail`,
+                    data: {
+                        buyer: job.data.buyer,
+                        order: {
+                            shop: job.data.shop,
+                            link: `https://tophatturtle.in/nft?id=${orderData.UUID}`,
+                            password: orderData.password
+                        }
+                    }
+                });
             } else {
-                //manual fullfill
+                const orderData = await createOrder(job.data.items, job.data.shop, job.data.id);
+                const ShopData = await client.get({
+                    path: 'shop',
+                    query: { "fields": "email,shop_owner" },
+                });
+                await axios({
+                    method: 'POST',
+                    URL: `${process.env.FUNCTIONS}/sendRiskAlertEmail`,
+                    data: {
+                        shop: {
+                            shop: job.data.shop,
+                            name: ShopData.body.shop.shop_owner,
+                            email: ShopData.body.shop.email
+                        }
+                    }
+                });
             }
             done();
         }
@@ -97,7 +126,8 @@ async function createOrder(items, shop, orderId) {
         password: password,
         shop: shop
     });
-    return;
+
+    return { UUID: UUID, password: password };
 }
 
 exports.ordersQueue = ordersQueue;

@@ -35,7 +35,11 @@ router.post('/ordersCreate', async function (req, res) {
       items: NFTItems,
       id: req.body.id,
       shop: req.headers["x-shopify-shop-domain"],
-      att: 0
+      att: 0,
+      buyer: {
+        email: req.body.email || req.body.contact_email,
+        name: req.shipping_address.name
+      }
     }, { delay: 10000 });
   }
   res.setHeader("Access-Control-Allow-Origin", "*");
