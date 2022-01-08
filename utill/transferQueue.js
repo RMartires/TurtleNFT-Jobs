@@ -44,6 +44,7 @@ transferQueue.process(async function (job, done) {
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
+            console.log(order.buyerWallet, ipfsArr[tdx], token.tokenId);
             return contractInstance["createNFT(address,string,uint256)"](order.buyerWallet, ipfsArr[tdx], token.tokenId);
         });
 
