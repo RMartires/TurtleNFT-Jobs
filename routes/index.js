@@ -48,9 +48,9 @@ router.post('/ordersCreate', async function (req, res) {
   });
 });
 
-router.post('/transfer', async function (req, res) {
+router.get('/transfer', async function (req, res) {
   transferQueue.add({
-    ...req.body
+    ...req.query
   });
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200).json({
