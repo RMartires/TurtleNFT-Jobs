@@ -1,6 +1,7 @@
 const Queue = require('bull');
 const axios = require('axios');
 const ethers = require('ethers');
+const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
 const { Promise } = require('bluebird');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL } = require("firebase/storage");
@@ -8,7 +9,23 @@ const config = require('../jobs/utill/config.json');
 const { db } = require('../utill/db');
 const { pinJSON } = require('../jobs/utill/pinJSON');
 
+Shopify.Context.initialize({
+    API_KEY: process.env.SHOPIFY_API_KEY,
+    API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
+    SCOPES: process.env.SCOPES.split(","),
+    HOST_NAME: process.env.HOST.replace(/https:\/\//, ""),
+    API_VERSION: ApiVersion.October20,
+    IS_EMBEDDED_APP: true,
+    // This should be replaced with your preferred storage strategy
+    SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
+});
+
 const transferQueue = new Queue('Transfer', 'redis://127.0.0.1:6379');
+
+const blockchainScans = {
+    "polygonMainnet": "https://polygonscan.com/tx/",
+    "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
+};
 
 transferQueue.process(async function (job, done) {
     console.log(job.data);
@@ -53,6 +70,12 @@ transferQueue.process(async function (job, done) {
             progress: 'transfered'
         });
 
+        let admin = await getDoc(doc(db, "admins", order.shop));
+        admin = admin.data();
+        let TrackingNumbers = txs.map((tx) => tx.hash);
+        let TrackingURLs = txs.map((tx) => `${blockchainScans[token.blockchain]}${tx.hash}`);
+        await updateFulfillment(admin, order.orderId, { TrackingNumbers, TrackingURLs });
+
         job.progress(100);
 
         console.log("done");
@@ -64,6 +87,29 @@ transferQueue.process(async function (job, done) {
         done(new Error(err.message));
     }
 });
+
+
+async function updateFulfillment(admin, orderId, data) {
+    // console.log(data);
+    const client = new Shopify.Clients.Rest(admin.shop, admin.accessToken);
+    const fullData = await client.get({
+        path: `orders/${orderId}/fulfillments`,
+    });
+    let fulfillmentId = fullData.body.fulfillments[0].id;
+    await client.post({
+        path: `fulfillments/${fulfillmentId}/update_tracking`,
+        data: {
+            "fulfillment": {
+                "notify_customer": true, "tracking_numbers": data.TrackingNumbers,
+                "tracking_urls": data.TrackingURLs
+                , "tracking_info": { "number": orderId, "url": "http:www.tophatturtle.com", "company": "tophatturtle" }
+            }
+        },
+        type: DataType.JSON,
+    });
+
+    return;
+}
 
 
 exports.transferQueue = transferQueue;
