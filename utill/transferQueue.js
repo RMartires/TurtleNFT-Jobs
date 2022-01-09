@@ -63,7 +63,7 @@ transferQueue.process(async function (job, done) {
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
             console.log(order.buyerWallet, ipfsArr[tdx], token.tokenId);
             return contractInstance["createNFT(address,string,uint256)"](order.buyerWallet, ipfsArr[tdx], token.tokenId);
-        });
+        }, { concurrency: 1 });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
             tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].hash })),

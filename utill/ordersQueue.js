@@ -47,7 +47,7 @@ ordersQueue.process(async function (job, done) {
             return null;
         } else {
             if (risks[0].recommendation == 'accept') {
-                const orderData = await createOrder(job.data.items, job.data.shop, job.data.id);
+                const orderData = await createOrder(job.data, job.data.id, null);
                 await axios({
                     method: 'POST',
                     url: `${process.env.FUNCTIONS}/sendOrderEmail`,
@@ -61,7 +61,7 @@ ordersQueue.process(async function (job, done) {
                     }
                 });
             } else {
-                const orderData = await createOrder(job.data.items, job.data.shop, job.data.id);
+                const orderData = await createOrder(job.data, job.data.id, "manual");
                 const ShopData = await client.get({
                     path: 'shop',
                     query: { "fields": "email,shop_owner" },
@@ -94,7 +94,11 @@ async function retryGETRisk(client, job) {
     return risks;
 }
 
-async function createOrder(items, shop, orderId) {
+async function createOrder(jobData, orderId, orderStatus) {
+    let items = jobData.items;
+    let shop = jobData.shop;
+    let buyer = jobData.buyer;
+
     let contracts = await Promise.map(items, (item) => {
         return getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
     });
@@ -124,7 +128,9 @@ async function createOrder(items, shop, orderId) {
         tokens: newItems,
         uuid: UUID,
         password: password,
-        shop: shop
+        shop: shop,
+        progress: orderStatus,
+        buyer: buyer
     });
 
     return { UUID: UUID, password: password };
