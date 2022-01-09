@@ -73,7 +73,7 @@ transferQueue.process(async function (job, done) {
         let admin = await getDoc(doc(db, "admins", order.shop));
         admin = admin.data();
         let TrackingNumbers = txs.map((tx) => tx.hash);
-        let TrackingURLs = txs.map((tx) => `${blockchainScans[token.blockchain]}${tx.hash}`);
+        let TrackingURLs = txs.map((tx, idx) => `${blockchainScans[order.tokens[idx].blockchain]}${tx.hash}`);
         await updateFulfillment(admin, order.orderId, { TrackingNumbers, TrackingURLs });
 
         job.progress(100);
