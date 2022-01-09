@@ -56,13 +56,15 @@ transferQueue.process(async function (job, done) {
 
         job.progress(50);
 
-        let txs = await Promise.map(order.tokens, (token, tdx) => {
+        let txs = await Promise.map(order.tokens, async (token, tdx) => {
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
             console.log(order.buyerWallet, ipfsArr[tdx], token.tokenId);
-            return contractInstance["createNFT(address,string,uint256)"](order.buyerWallet, ipfsArr[tdx], token.tokenId);
+            let tx = await contractInstance["createNFT(address,string,uint256)"](order.buyerWallet, ipfsArr[tdx], token.tokenId);
+            job.log(`minted: ${tx.hash}`);
+            return tx;
         }, { concurrency: 1 });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
