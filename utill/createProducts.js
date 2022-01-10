@@ -3,6 +3,7 @@ const { collection, query, where, getDocs, updateDoc, doc } = require("firebase/
 const { Promise } = require('bluebird');
 const axios = require('axios');
 const { db } = require('./db');
+var { retryOperation } = require('./promiseRetry');
 
 Shopify.Context.initialize({
     API_KEY: process.env.SHOPIFY_API_KEY,
@@ -15,15 +16,10 @@ Shopify.Context.initialize({
     SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
 });
 
-
-
 const uploadImage = async (client, data) => {
-    // let response = await axios.get(data.src);
-    // let baseData = "data:" + response.headers["content-type"] + ";base64," + Buffer.from(response.data).toString('base64');
-    // console.log(baseData);
     let r = await client.post({
         path: `products/${data.id}/images`,
-        data: { "image": { "src": data.src } },
+        data: { "image": { src: data.src } },
         type: DataType.JSON,
     });
     return r.body.image.id;
@@ -116,10 +112,12 @@ exports.createProducts = async (data) => {
     images = images.map((x, xdx) => ({ ...x, id: product.body.product.variants[xdx].id }));
 
     let imageIDs = await Promise.map(images, (el) => {
-        return uploadImage(client, {
-            id: product.body.product.id,
-            src: el.image
-        });
+        return retryOperation(
+            uploadImage, [client, {
+                id: product.body.product.id,
+                src: el.image,
+            }], 1000, 5
+        );
     }, { concurrency: 5 });
 
     await Promise.map(product.body.product.variants.map((x, xdx) => ({ id: x.id, image_id: imageIDs[xdx] })), (data) => {
