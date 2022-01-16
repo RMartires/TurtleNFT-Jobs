@@ -49,7 +49,7 @@ router.post('/ordersCreate', async function (req, res) {
   });
 });
 
-router.post('/CreateProduct', CreateProduct);
+router.get('/CreateProduct', CreateProduct);
 
 router.get('/transfer', async function (req, res) {
   transferQueue.add({
