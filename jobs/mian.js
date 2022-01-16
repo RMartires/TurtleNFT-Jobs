@@ -21,17 +21,26 @@ async function processContract(data, job) {
 
     console.log("Creating metadata");
     job.log("Creating metadata");
-    let tokenId = 100;
+    const ExtraFields = ["external_url"];
+    let tokenId = 1;
     let tokensToMint = [];
     let ipfsArr = data.contract.tokens.map(token => {
-        return ({
+        let temp = {
             filename: token.title,
             data: {
-                Title: token.title,
-                Description: token.description,
-                URL: `ipfs://${token.image}`
+                name: token.title,
+                description: token.description,
+                image: `ipfs://${token.image}`,
+            }
+        };
+
+        ExtraFields.forEach(field => {
+            if (token[field]) {
+                temp.data[field] = token[field];
             }
         });
+
+        return temp;
     });
     data.contract.tokens.forEach((token, tdx) => {
         for (var i = 0; i < token.number; i++) {

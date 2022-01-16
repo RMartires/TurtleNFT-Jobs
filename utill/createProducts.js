@@ -16,47 +16,6 @@ Shopify.Context.initialize({
     SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
 });
 
-const uploadImage = async (client, data) => {
-    let r = await client.post({
-        path: `products/${data.id}/images`,
-        data: { "image": { src: data.src } },
-        type: DataType.JSON,
-    });
-    return r.body.image.id;
-};
-const uploadVarientImage = async (client, data) => {
-    let r = await client.put({
-        path: `variants/${data.id}`,
-        data: { "variant": { "id": data.id, "image_id": data.image_id } },
-        type: DataType.JSON,
-    });
-    return;
-};
-const createProduct = async (client, data) => {
-    let r = await client.post({
-        path: 'products',
-        data: {
-            product: data
-        },
-        type: DataType.JSON,
-    });
-    return r;
-};
-const createVarient = async (client, data) => {
-    let r = await client.post({
-        path: `products/${data.id}/variants`,
-        data: {
-            "variant": {
-                "image_id": data.image_id,
-                "option1": "tokenId",
-                "tokenId": "1",
-                "price": data.price
-            }
-        },
-        type: DataType.JSON,
-    });
-    return r;
-};
 const updateInventory = async (client, data) => {
     let locations = await client.get({
         path: 'locations',
@@ -73,6 +32,17 @@ const updateInventory = async (client, data) => {
     return;
 };
 
+const createProduct = async (client, data) => {
+    let r = await client.post({
+        path: 'products',
+        data: {
+            product: data
+        },
+        type: DataType.JSON,
+    });
+    return r;
+};
+
 exports.createProducts = async (data) => {
     let shopData;
     const querySnapshot = await getDocs(query(collection(db, "admins"), where("shop", "==", data.shop)));
@@ -80,63 +50,73 @@ exports.createProducts = async (data) => {
         shopData = doc.data();
     });
 
-    let images = [];
-    let tokenIds = data.tokenIds.map(x => `#${x}`);
-    let variantDefaults = { "inventory_management": "shopify", "inventory_policy": "deny" }
-    let variants = tokenIds.map(x => ({ ...variantDefaults, "option1": x }));
-    let num = 0;
-    data.variants.forEach((el, edx) => {
-        for (let i = num; i < (el.number + num); i++) {
-            let tempvar = { ...variants[i], price: el.price };
-            variants[i] = tempvar;
-            images.push({ image: el.image });
-        }
-        num += el.number;
-    });
+    let variantDefaults = { "inventory_management": "shopify", "inventory_policy": "deny" };
 
     const client = new Shopify.Clients.Rest(shopData.shop, shopData.accessToken);
-    let product = await createProduct(client, {
+    let r = await createProduct(client, {
         "body_html": data.body_html,
         "title": data.title,
         "vendor": "Turtle NFT",
         "product_type": "NFT",
         "tags": ["NFT", ...data.tags],
-        "options": [
-            {
-                "name": "TokenID", "values": tokenIds
-            }
-        ],
-        "variants": variants
+    });
+    await client.post({
+        path: `products/${r.body.product.id}/images`,
+        data: { "image": { attachment: data.image64 } },
+        type: DataType.JSON,
     });
 
-    images = images.map((x, xdx) => ({ ...x, id: product.body.product.variants[xdx].id }));
+    let variant = r.body.product.variants[0];
+    r = await client.put({
+        path: `variants/${variant.id}`,
+        data: {
+            "variant": {
+                "id": variant.id,
+                ...variantDefaults,
+                price: data.price
+            }
+        },
+        type: DataType.JSON,
+    });
 
-    let imageIDs = await Promise.map(images, (el) => {
-        return retryOperation(
-            uploadImage, [client, {
-                id: product.body.product.id,
-                src: el.image,
-            }], 1000, 5
-        );
-    }, { concurrency: 5 });
-
-    await Promise.map(product.body.product.variants.map((x, xdx) => ({ id: x.id, image_id: imageIDs[xdx] })), (data) => {
-        return uploadVarientImage(client, {
-            image_id: data.image_id,
-            id: data.id
-        });
-    }, { concurrency: 5 });
-
-    await Promise.map(product.body.product.variants.map(x => x.inventory_item_id), (item_id) => {
-        return updateInventory(client, {
-            item_id: item_id,
-            number: 1
-        });
-    }, { concurrency: 5 });
-
+    let inventory_item_id = r.body.variant.inventory_item_id;
+    await updateInventory(client, { item_id: inventory_item_id, number: data.supply });
     await updateDoc(doc(db, "contracts", data.contractDocName), {
-        deployedStatus: 'minted'
+        deployedStatus: 'published'
     });
 
     return;
 }
+
+const uploadImage = async (client, data) => {
+    let r = await client.post({
+        path: `products/${data.id}/images`,
+        data: { "image": { src: data.src } },
+        type: DataType.JSON,
+    });
+    return r.body.image.id;
+};
+const uploadVarientImage = async (client, data) => {
+    let r = await client.put({
+        path: `variants/${data.id}`,
+        data: { "variant": { "id": data.id, "image_id": data.image_id } },
+        type: DataType.JSON,
+    });
+    return;
+};
+
+const createVarient = async (client, data) => {
+    let r = await client.post({
+        path: `products/${data.id}/variants`,
+        data: {
+            "variant": {
+                "image_id": data.image_id,
+                "option1": "tokenId",
+                "tokenId": "1",
+                "price": data.price
+            }
+        },
+        type: DataType.JSON,
+    });
+    return r;
+};

@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
+const { CreateProduct } = require("../controllers/products");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue } = require('../utill/transferQueue');
@@ -47,6 +48,8 @@ router.post('/ordersCreate', async function (req, res) {
     msg: "done"
   });
 });
+
+router.post('/CreateProduct', CreateProduct);
 
 router.get('/transfer', async function (req, res) {
   transferQueue.add({
