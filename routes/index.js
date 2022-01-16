@@ -6,9 +6,10 @@ const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue } = require('../utill/transferQueue');
 /* GET home page. */
-router.post('/processContract', async function (req, res) {
+router.get('/processContract', async function (req, res) {
   try {
-    contractQueue.add(req.body);
+    console.log(req.query);
+    contractQueue.add(req.query);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({
       msg: "done"
