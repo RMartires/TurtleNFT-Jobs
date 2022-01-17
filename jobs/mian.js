@@ -23,37 +23,29 @@ async function processContract(data, job) {
     job.log("Creating metadata");
     const ExtraFields = ["external_url"];
     let tokenId = 1;
-    let tokensToMint = [];
-    let ipfsArr = data.contract.tokens.map(token => {
-        let temp = {
-            filename: token.title,
-            data: {
-                name: token.title,
-                description: token.description,
-                image: `ipfs://${token.image}`,
-            }
-        };
-
-        ExtraFields.forEach(field => {
-            if (token[field]) {
-                temp.data[field] = token[field];
-            }
-        });
-
-        return temp;
-    });
-    data.contract.tokens.forEach((token, tdx) => {
-        for (var i = 0; i < token.number; i++) {
-            tokensToMint.push({
-                metaData: ipfsArr[tdx].data,
-                filename: ipfsArr[tdx].filename,
-                tokenId: tokenId
-            });
-            tokenId += 1;
+    let tokenToMint = null;
+    let token = data.contract.tokens[0];
+    let ipfs = null;
+    let temp = {
+        filename: token.title,
+        data: {
+            name: token.title,
+            description: token.description,
+            image: `ipfs://${token.image}`,
+        }
+    };
+    ExtraFields.forEach(field => {
+        if (token[field]) {
+            temp.data[field] = token[field];
         }
     });
+    ipfs = temp;
+    tokenToMint = {
+        metaData: ipfs.data,
+        filename: ipfs.filename.replace(" ", "_"),
+    };
 
-    return { tokensToMint: tokensToMint, contractAddress: nft.address }
+    return { tokenToMint: tokenToMint, contractAddress: nft.address }
 }
 
 // async function mintToken(contract, data) {

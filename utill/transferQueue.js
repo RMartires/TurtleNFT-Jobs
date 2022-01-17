@@ -61,22 +61,27 @@ transferQueue.process(async function (job, done) {
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-            console.log(order.buyerWallet, ipfsArr[tdx], token.tokenId);
-            let tx = await contractInstance["createNFT(address,string,uint256)"](order.buyerWallet, ipfsArr[tdx], token.tokenId);
-            job.log(`minted: ${tx.hash}`);
-            return tx;
+            console.log(order.buyerWallet, ipfsArr[tdx]);
+            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, ipfsArr[tdx]);
+            let tokenID = await new Promise((res, rej) => {
+                contract.on("ValueChanged", (author, newValue, event) => {
+                    res(parseInt(newValue._hex));
+                });
+            });
+            job.log(`minted: ${tokenID} ${tx.hash}`);
+            return { tx: tx, tokenID: tokenID };
         }, { concurrency: 1 });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
-            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].hash })),
+            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tx.tokenID })),
             progress: 'transfered'
         });
 
         // let txs = order.tokens;
         let admin = await getDoc(doc(db, "admins", order.shop));
         admin = admin.data();
-        let TrackingNumbers = txs.map((tx) => tx.hash);
-        let TrackingURLs = txs.map((tx, idx) => `${blockchainScans[order.tokens[idx].blockchain]}${tx.hash}`);
+        let TrackingNumbers = txs.map((tx) => tx.tx.hash);
+        let TrackingURLs = txs.map((tx, idx) => `${blockchainScans[order.tokens[idx].blockchain]}${tx.tx.hash}`);
         await updateFulfillment(admin, order.orderId, { TrackingNumbers, TrackingURLs });
 
         job.progress(100);

@@ -105,18 +105,19 @@ async function createOrder(jobData, orderId, orderStatus) {
     contracts = contracts.map(con => con.data());
     let newItems = [];
     items.forEach((item, idx) => {
-        let token = contracts[idx].tokensToMint.filter(x => `#${x.tokenId}` == item.variant_title)[0];
-        newItems.push({
-            name: item.name,
-            price: item.price,
-            tokenMeta: token.metaData,
-            filename: token.filename,
-            contractAddress: contracts[idx].contractAddress,
-            tokenId: token.tokenId,
-            contractName: contracts[idx].contractName,
-            shop: contracts[idx].shop,
-            blockchain: contracts[idx].blockchain
-        });
+        let token = contracts[idx].tokenToMint;
+        for (let i = 0; i < item.quantity; i++) {
+            newItems.push({
+                name: item.name,
+                price: item.price,
+                tokenMeta: token.metaData,
+                filename: token.filename,
+                contractAddress: contracts[idx].contractAddress,
+                contractName: contracts[idx].contractName,
+                shop: contracts[idx].shop,
+                blockchain: contracts[idx].blockchain,
+            });
+        }
     });
     let UUID = v4();
     let password = generator.generate({
