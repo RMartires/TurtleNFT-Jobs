@@ -64,7 +64,7 @@ transferQueue.process(async function (job, done) {
             console.log(order.buyerWallet, ipfsArr[tdx]);
             let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, ipfsArr[tdx]);
             let tokenID = await new Promise((res, rej) => {
-                contract.on("ValueChanged", (author, newValue, event) => {
+                contractInstance.on("ValueChanged", (author, newValue, event) => {
                     res(parseInt(newValue._hex));
                 });
             });
@@ -73,7 +73,7 @@ transferQueue.process(async function (job, done) {
         }, { concurrency: 1 });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
-            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tx.tokenID })),
+            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tokenID })),
             progress: 'transfered'
         });
 
