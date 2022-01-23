@@ -8,7 +8,8 @@ async function processContract(data, job) {
     hre.config.networks.matic.url = config[data.contract.blockchain];
     console.log(config[data.contract.blockchain]);
 
-    await createContract(data.filename, data.contract.contractName, data.contract.contractSymbol);
+    await createContract(data.filename, data.contract.contractName,
+        data.contract.contractSymbol, data.contract.tokens[0].number);
     await hre.run("compile");
     job.log("Contract Compiled");
     const NFT = await hre.ethers.getContractFactory(data.contract.contractName);

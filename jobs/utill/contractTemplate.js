@@ -1,4 +1,4 @@
-exports.contractTemplate = (contractName, contractSymbol) => {
+exports.contractTemplate = (contractName, contractSymbol, data) => {
 
     return `//SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
@@ -10,6 +10,9 @@ contract ${contractName} is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
+    // Constants
+    uint256 public constant TOTAL_SUPPLY = ${data.totalSupply};
+
     event ValueChanged(address indexed author, uint256 tokenId);
 
     constructor() ERC721("${contractName}", "${contractSymbol}") {}
@@ -18,6 +21,9 @@ contract ${contractName} is ERC721URIStorage {
         public
         returns (uint256)
     {
+        uint256 currenttokenId = _tokenIds.current();
+        require(currenttokenId < TOTAL_SUPPLY, "Max supply reached");
+
         _tokenIds.increment();
         
         uint256 newItemId = _tokenIds.current();
