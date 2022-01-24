@@ -40,6 +40,22 @@ async function processContract(data, job) {
             temp.data[field] = token[field];
         }
     });
+
+    if (token.attributes?.length > 0) {
+        temp.data.attributes = token.attributes.map(x => {
+            if (x.display_type) {
+                let temp = {
+                    display_type: x.display_type,
+                    trait_type: x.trait_type,
+                    value: Number(x.value.x) / Number(x.value.y)
+                };
+                return temp;
+            } else {
+                return x;
+            }
+        });
+    }
+
     ipfs = temp;
     tokenToMint = {
         metaData: ipfs.data,
