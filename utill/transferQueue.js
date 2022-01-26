@@ -65,6 +65,8 @@ transferQueue.process(async function (job, done) {
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
+            let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
             console.log(order.buyerWallet, ipfsArr[tdx]);
@@ -74,7 +76,10 @@ transferQueue.process(async function (job, done) {
 
             let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
             let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
-                { gasPrice: ethers.BigNumber.from(gasPrice) });
+                {
+                    gasPrice: ethers.BigNumber.from(gasPrice),
+                    nonce: nonce
+                });
 
             let tokenID = await new Promise((res, rej) => {
                 contractInstance.on("ValueChanged", (author, newValue, event) => {

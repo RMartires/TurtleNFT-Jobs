@@ -27,14 +27,17 @@ async function processContract(data, job) {
     r = JSON.parse(r.toString());
 
     let provider = new ethers.providers.JsonRpcProvider(config[data.contract.blockchain]);
+    let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+
     let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     let NFT = new ethers.ContractFactory(r.abi, r.bytecode, wallet);
     let nft = await NFT.deploy({
-        gasPrice: ethers.BigNumber.from(gasPrice)
+        gasPrice: ethers.BigNumber.from(gasPrice),
+        nonce: nonce
     });
     job.log(nft.deployTransaction.hash);
     job.log(nft.deployTransaction.nonce);
-    console.log(nft.deployTransaction.hash);
+    console.log(nft.deployTransaction.hash, nft.deployTransaction.nonce);
     await nft.deployTransaction.wait();
     console.log(nft.address);
     job.log(nft.address);
