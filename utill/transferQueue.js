@@ -22,6 +22,11 @@ Shopify.Context.initialize({
 
 const transferQueue = new Queue('Transfer', 'redis://127.0.0.1:6379');
 
+const gasStation = {
+    "polygonMainnet": 'https://gasstation-mainnet.matic.network/',
+    "polygonTestnet": 'https://gasstation-mumbai.matic.today/'
+};
+
 const blockchainScans = {
     "polygonMainnet": "https://polygonscan.com/tx/",
     "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
@@ -56,13 +61,20 @@ transferQueue.process(async function (job, done) {
 
         job.progress(50);
 
+
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
             console.log(order.buyerWallet, ipfsArr[tdx]);
-            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, ipfsArr[tdx]);
+
+            let r1 = await axios.get(gasStation[token.blockchain]);
+            let gasPrice = r1.data['fast'] * 1000000000;
+
+            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, ipfsArr[tdx],
+                { gasPrice: ethers.BigNumber.from(gasPrice) });
+
             let tokenID = await new Promise((res, rej) => {
                 contractInstance.on("ValueChanged", (author, newValue, event) => {
                     res(parseInt(newValue._hex));
