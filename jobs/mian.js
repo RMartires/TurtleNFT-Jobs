@@ -32,10 +32,11 @@ async function processContract(data, job) {
     let nft = await NFT.deploy({
         gasPrice: ethers.BigNumber.from(gasPrice)
     });
-    job.log(nft.deployTransaction.hash);
+    job.log(nft.deployTransaction.hash, nft.deployTransaction.nonce);
     console.log(nft.deployTransaction.hash);
     await nft.deployTransaction.wait();
     console.log(nft.address);
+    job.log(nft.address);
 
     await fs.unlink(`${__dirname}/../contracts/${data.filename}.sol`);
 
