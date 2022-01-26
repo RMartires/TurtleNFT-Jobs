@@ -41,7 +41,7 @@ async function processContract(data, job) {
 
     console.log("Creating metadata");
     job.log("Creating metadata");
-    const ExtraFields = ["external_url"];
+    const ExtraFields = ["external_link"];
     let tokenId = 1;
     let tokenToMint = null;
     let token = data.contract.tokens[0];
@@ -56,7 +56,7 @@ async function processContract(data, job) {
     };
     ExtraFields.forEach(field => {
         if (token[field]) {
-            temp.data[field] = token[field];
+            temp.data["external_url"] = token[field];
         }
     });
 
