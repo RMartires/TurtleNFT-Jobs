@@ -12,11 +12,11 @@ const gasStation = {
 };
 
 async function processContract(data, job) {
+    job.log(data.contract.blockchain);
 
     let r1 = await axios.get(gasStation[data.contract.blockchain]);
     let gasPrice = r1.data['fast'] * 1000000000;
 
-    job.log(hre.config.networks.matic.url);
 
     await createContract(data.filename, data.contract.contractName,
         data.contract.contractSymbol, data.contract.tokens[0].number);
