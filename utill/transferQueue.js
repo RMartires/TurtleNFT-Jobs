@@ -72,7 +72,8 @@ transferQueue.process(async function (job, done) {
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
 
-            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, ipfsArr[tdx],
+            let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
+            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
                 { gasPrice: ethers.BigNumber.from(gasPrice) });
 
             let tokenID = await new Promise((res, rej) => {
