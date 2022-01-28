@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
+const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
 const { ordersQueue } = require("../utill/ordersQueue");
@@ -51,6 +52,7 @@ router.post('/ordersCreate', async function (req, res) {
   });
 });
 
+router.post('/uninstall', uninstall);
 router.get('/CreateProduct', CreateProduct);
 router.get('/ChangePlan', ChangePlan);
 
