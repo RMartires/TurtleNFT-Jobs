@@ -21,7 +21,7 @@ exports.ChangePlan = async (req, res) => {
                 "recurring_application_charge": {
                     "name": req.query.plan,
                     "price": plans[req.query.plan],
-                    "return_url": `https://a78e-103-119-209-82.ngrok.io/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
+                    "return_url": `https://nft-gifter.vercel.app/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
                     "trial_days": 7,
                     "test": process.env.TestCharge
                 }
