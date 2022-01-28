@@ -31,8 +31,13 @@ async function processContract(data, job) {
 
     let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     let NFT = new ethers.ContractFactory(r.abi, r.bytecode, wallet);
+
+    // let deployedData = NFT.interface.encodeDeploy();
+    // let estimateGas = await provider.estimateGas({ data: deployedData });
+
     let nft = await NFT.deploy({
         gasPrice: ethers.BigNumber.from(gasPrice),
+        // gasLimit: estimateGas,
         nonce: nonce
     });
     job.log(nft.deployTransaction.hash);
