@@ -32,7 +32,7 @@ const blockchainScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
 };
 
-transferQueue.process(async function (job, done) {
+transferQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
         let order = await getDoc(doc(db, "orders", job.data.orderId));
