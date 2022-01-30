@@ -11,7 +11,13 @@ const { transferQueue } = require('../utill/transferQueue');
 router.get('/processContract', async function (req, res) {
   try {
     console.log(req.query);
-    contractQueue.add(req.query);
+    contractQueue.add(req.query, {
+      attempts: 5,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    });
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({
       msg: "done"
@@ -59,6 +65,12 @@ router.get('/ChangePlan', ChangePlan);
 router.get('/transfer', async function (req, res) {
   transferQueue.add({
     ...req.query
+  }, {
+    attempts: 5,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
   });
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200).json({

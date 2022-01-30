@@ -13,7 +13,7 @@ const blockScans = {
     "polygonMainnet": "https://polygonscan.com/address/"
 };
 
-contractQueue.process(async function (job, done) {
+contractQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
         let contract = await getDoc(doc(db, "contracts", job.data.filename));
