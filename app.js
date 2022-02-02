@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const { createBullBoard } = require('bull-board')
 const { BullAdapter } = require('bull-board/bullAdapter')
+const { verifyWebhook } = require('./utill/verifyWebhook');
 
 require('dotenv').config();
 
@@ -16,7 +17,7 @@ var { transferQueue } = require("./utill/transferQueue");
 var app = express();
 
 app.use(logger('dev'));
-app.use(express.json());
+app.use(express.json({ verify: verifyWebhook }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 

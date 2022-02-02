@@ -7,6 +7,7 @@ const { ChangePlan } = require("../controllers/plans");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue } = require('../utill/transferQueue');
+
 /* GET home page. */
 router.get('/processContract', async function (req, res) {
   try {
@@ -27,35 +28,49 @@ router.get('/processContract', async function (req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(500).json({
       msg: 'error'
-    })
+    });
   }
 });
 
 router.post('/ordersCreate', async function (req, res) {
-  let isNFT;
-  let NFTItems = [];
-  req.body.line_items.forEach(item => {
-    if (item.vendor = "Turtle NFT") {
-      NFTItems.push(item);
-      isNFT = true;
-    }
-  });
-  if (isNFT) {
-    ordersQueue.add({
-      items: NFTItems,
-      id: req.body.id,
-      shop: req.headers["x-shopify-shop-domain"],
-      att: 0,
-      buyer: {
-        email: req.body.email || req.body.contact_email,
-        name: req.body.shipping_address.name
+  try {
+    if (!req.auth) throw new Error("Unauthorized");
+    let isNFT;
+    let NFTItems = [];
+    req.body.line_items.forEach(item => {
+      if (item.vendor = "Turtle NFT") {
+        NFTItems.push(item);
+        isNFT = true;
       }
-    }, { delay: 10000 });
+    });
+    if (isNFT) {
+      ordersQueue.add({
+        items: NFTItems,
+        id: req.body.id,
+        shop: req.headers["x-shopify-shop-domain"],
+        att: 0,
+        buyer: {
+          email: req.body.email || req.body.contact_email,
+          name: req.body.shipping_address.name
+        }
+      }, { delay: 10000 });
+    }
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({
+      msg: "done"
+    });
+  } catch (err) {
+    if (err.message == "Unauthorized") {
+      res.status(401).json({
+        msg: 'Unauthorized'
+      });
+    } else {
+      res.status(500).json({
+        msg: 'error'
+      });
+    }
   }
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.status(200).json({
-    msg: "done"
-  });
 });
 
 router.post('/uninstall', uninstall);
