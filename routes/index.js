@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
+const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
 const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
@@ -70,6 +71,10 @@ router.post('/ordersCreate', async function (req, res) {
 });
 
 router.post('/uninstall', uninstall);
+router.post('/MWCustomerData', MWCustomerData);
+router.post('/MWCustomerErasure', MWCustomerErasure);
+router.post('/MWShopErasure', MWShopErasure);
+
 router.get('/CreateProduct', CreateProduct);
 router.get('/ChangePlan', ChangePlan);
 
