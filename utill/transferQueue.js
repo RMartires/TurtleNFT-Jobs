@@ -39,67 +39,67 @@ transferQueue.process(5, async function (job, done) {
         if (!order.exists()) throw new Error(`Error: contract ${job.data.orderId} does not exist`);
         order = order.data();
 
-        // const storage = getStorage();
-        // const ABI_URLs = await Promise.map(order.tokens, (token) => {
-        //     return getDownloadURL(ref(storage, `artifacts/${token.contractName}_${token.shop.split(".")[0]}.json`));
-        // });
-        // const files = await Promise.map(ABI_URLs, (url) => {
-        //     return axios({
-        //         method: 'get',
-        //         url: url
-        //     });
-        // });
+        const storage = getStorage();
+        const ABI_URLs = await Promise.map(order.tokens, (token) => {
+            return getDownloadURL(ref(storage, `artifacts/${token.contractName}_${token.shop.split(".")[0]}.json`));
+        });
+        const files = await Promise.map(ABI_URLs, (url) => {
+            return axios({
+                method: 'get',
+                url: url
+            });
+        });
 
-        // job.progress(33);
+        job.progress(33);
 
-        // let ipfsArr = await Promise.map(order.tokens, (token) => {
-        //     return pinJSON({
-        //         filename: token.filename,
-        //         data: token.tokenMeta
-        //     });
-        // });
+        let ipfsArr = await Promise.map(order.tokens, (token) => {
+            return pinJSON({
+                filename: token.filename,
+                data: token.tokenMeta
+            });
+        });
 
-        // job.progress(50);
+        job.progress(50);
 
 
-        // let txs = await Promise.map(order.tokens, async (token, tdx) => {
-        //     let abi = files[tdx].data.abi;
-        //     let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
-        //     let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+        let txs = await Promise.map(order.tokens, async (token, tdx) => {
+            let abi = files[tdx].data.abi;
+            let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
+            let nonce = await provider.getTransactionCount(process.env.Public_KEY);
 
-        //     let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-        //     let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-        //     console.log(order.buyerWallet, ipfsArr[tdx]);
+            let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+            let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
+            console.log(order.buyerWallet, ipfsArr[tdx]);
 
-        //     let r1 = await axios.get(gasStation[token.blockchain]);
-        //     let gasPrice = r1.data['fast'] * 1000000000;
+            let r1 = await axios.get(gasStation[token.blockchain]);
+            let gasPrice = r1.data['fast'] * 1000000000;
 
-        //     let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
-        //     let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
-        //         {
-        //             gasPrice: ethers.BigNumber.from(gasPrice),
-        //             nonce: nonce
-        //         });
+            let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
+            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
+                {
+                    gasPrice: ethers.BigNumber.from(gasPrice),
+                    nonce: nonce
+                });
 
-        //     let tokenID = await new Promise((res, rej) => {
-        //         contractInstance.on("ValueChanged", (author, newValue, event) => {
-        //             res(parseInt(newValue._hex));
-        //         });
-        //     });
-        //     job.log(`minted: ${tokenID} ${tx.hash}`);
-        //     return { tx: tx, tokenID: tokenID };
-        // }, { concurrency: 1 });
+            let tokenID = await new Promise((res, rej) => {
+                contractInstance.on("ValueChanged", (author, newValue, event) => {
+                    res(parseInt(newValue._hex));
+                });
+            });
+            job.log(`minted: ${tokenID} ${tx.hash}`);
+            return { tx: tx, tokenID: tokenID };
+        }, { concurrency: 1 });
 
-        // await updateDoc(doc(db, "orders", job.data.orderId), {
-        //     tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tokenID })),
-        //     progress: 'transfered'
-        // });
+        await updateDoc(doc(db, "orders", job.data.orderId), {
+            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tokenID })),
+            progress: 'transfered'
+        });
 
-        let txs = order.tokens;
+        // let txs = order.tokens;
         let admin = await getDoc(doc(db, "admins", order.shop));
         admin = admin.data();
-        let TrackingNumbers = [];//txs.map((tx) => tx.tx.hash);
-        let TrackingURLs = [];//txs.map((tx, idx) => `${blockchainScans[order.tokens[idx].blockchain]}${tx.tx.hash}`);
+        let TrackingNumbers = txs.map((tx) => tx.tx.hash);
+        let TrackingURLs = txs.map((tx, idx) => `${blockchainScans[order.tokens[idx].blockchain]}${tx.tx.hash}`);
         await updateFulfillment(admin, order.orderId, { TrackingNumbers, TrackingURLs });
 
         job.progress(100);
