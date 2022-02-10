@@ -71,6 +71,7 @@ router.post('/ordersCreate', async function (req, res) {
 });
 
 router.post('/uninstall', uninstall);
+// router.post('/PlanChange', PlanChangeWH);
 router.post('/MWCustomerData', MWCustomerData);
 router.post('/MWCustomerErasure', MWCustomerErasure);
 router.post('/MWShopErasure', MWShopErasure);
