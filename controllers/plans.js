@@ -21,7 +21,7 @@ exports.ChangePlan = async (req, res) => {
                 "recurring_application_charge": {
                     "name": req.query.plan,
                     "price": plans[req.query.plan],
-                    "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&host=${admin.host}`,
+                    "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
                     "test": process.env.TestCharge
                 }
             },
