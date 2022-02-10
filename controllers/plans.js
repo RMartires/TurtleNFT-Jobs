@@ -5,7 +5,7 @@ const { db } = require('../utill/db');
 exports.ChangePlan = async (req, res) => {
     try {
         const plans = {
-            basic: 1,
+            basic: 0,
             premium: 50,
             ultimate: 100
         };
