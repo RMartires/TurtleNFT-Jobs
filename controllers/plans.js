@@ -5,9 +5,9 @@ const { db } = require('../utill/db');
 exports.ChangePlan = async (req, res) => {
     try {
         const plans = {
-            basic: 35,
-            premium: 250,
-            ultimate: 750
+            basic: 1,
+            premium: 50,
+            ultimate: 100
         };
 
         let admin = await getDoc(doc(db, "admins", req.query.shop));
@@ -21,8 +21,7 @@ exports.ChangePlan = async (req, res) => {
                 "recurring_application_charge": {
                     "name": req.query.plan,
                     "price": plans[req.query.plan],
-                    "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
-                    "trial_days": 7,
+                    "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&host=${admin.host}`,
                     "test": process.env.TestCharge
                 }
             },
