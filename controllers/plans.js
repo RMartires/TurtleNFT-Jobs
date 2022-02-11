@@ -16,28 +16,32 @@ exports.ChangePlan = async (req, res) => {
 
         const client = new Shopify.Clients.Rest(admin.shop, admin.accessToken);
         let data = null;
-        if (req.query.plan == "basic") {
-            data = await client.delete({
-                path: `recurring_application_charges/${admin.charge_id}`,
-            });
-        } else {
-            data = await client.post({
-                path: 'recurring_application_charges',
-                data: {
-                    "recurring_application_charge": {
+
+        data = await client.post({
+            path: 'recurring_application_charges',
+            data: {
+                "recurring_application_charge": (req.query.plan == "basic") ?
+                    {
+                        "name": req.query.plan,
+                        "price": plans[req.query.plan],
+                        "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
+                        "capped_amount": 1,
+                        "terms": "$1 wont be charged",
+                        "test": process.env.TestCharge
+                    } :
+                    {
                         "name": req.query.plan,
                         "price": plans[req.query.plan],
                         "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
                         "test": process.env.TestCharge
                     }
-                },
-                type: DataType.JSON,
-            });
-        }
+            },
+            type: DataType.JSON,
+        });
 
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.status(200).json({
-            data: (req.query.plan == "basic") ? "charge deleted" : data.body.recurring_application_charge
+            data: data.body.recurring_application_charge
         });
     } catch (err) {
         console.log(err);
