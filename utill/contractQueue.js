@@ -4,6 +4,7 @@ const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { db } = require('../utill/db');
 const { processContract } = require("../jobs/mian");
+const { CreateProductService } = require('../controllers/products');
 
 const contractQueue = new Queue('Contract', 'redis://127.0.0.1:6379');
 
@@ -24,11 +25,17 @@ contractQueue.process(5, async function (job, done) {
             contract: contract,
             filename: job.data.filename
         }, job);
+
+        job.progress(50);
+
+        await CreateProductService(job.data.user, `${job.data.contractName}_${job.data.user}`);
+
         await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
             ...deployedData,
-            deployedStatus: 'minted'
+            deployedStatus: 'published'
         });
-        job.progress(50);
+
+        job.progress(75);
 
         const contractArtifact =
             await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);

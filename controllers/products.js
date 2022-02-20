@@ -46,3 +46,33 @@ exports.CreateProduct = async (req, res) => {
         });
     }
 };
+
+const CreateProductService = async (user, contractFileName) => {
+    let contract = await getDoc(doc(db, "contracts", contractFileName));
+    if (!contract.exists()) throw new Error(`Error: contract ${contractFileName} does not exist`);
+    contract = contract.data();
+
+    let data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
+        responseType: 'arraybuffer'
+    });
+    let encoded = Buffer.from(data.data, 'binary').toString('base64');
+
+    await createProducts({
+        shop: `${user}.myshopify.com`,
+        body_html: `<h2>${contract.contractName}</h2>
+                <h4>Symbol: ${contract.contractSymbol}</h4>
+                <h4>Contract Address: ${contract.contractAddress}</h4>
+                <h4>Blockchain: ${blockchains[contract.blockchain]}</h4>
+                `,
+        title: contract.contractName,
+        tags: ["NFT"],
+        contractDocName: contractFileName,
+        image64: encoded,
+        supply: contract.tokens[0].number,
+        price: contract.tokens[0].price
+    });
+
+    return;
+};
+
+exports.CreateProductService = CreateProductService;
