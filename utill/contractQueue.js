@@ -26,12 +26,15 @@ contractQueue.process(5, async function (job, done) {
             filename: job.data.filename
         }, job);
 
+        await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
+            ...deployedData,
+        });
+
         job.progress(50);
 
         await CreateProductService(job.data.user, `${job.data.contractName}_${job.data.user}`);
 
         await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
-            ...deployedData,
             deployedStatus: 'published'
         });
 
