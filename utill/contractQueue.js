@@ -57,8 +57,14 @@ contractQueue.process(5, async function (job, done) {
         job.progress(100);
         done();
     } catch (err) {
+        if (job.attemptsMade === 4) {
+            await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
+                deployedStatus: 'failed'
+            });
+        }
         console.log(err);
         done(new Error(err.message));
+
     }
 });
 

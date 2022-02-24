@@ -16,6 +16,7 @@ async function processContract(data, job) {
 
     let r1 = await axios.get(gasStation[data.contract.blockchain]);
     let gasPrice = r1.data['fast'] * 1000000000;
+    gasPrice = Math.round(gasPrice);
 
 
     await createContract(data.filename, data.contract.contractName,
