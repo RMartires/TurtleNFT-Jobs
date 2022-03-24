@@ -27,10 +27,10 @@ const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBo
   new BullAdapter(transferQueue)
 ]);
 
+app.use('/jobs/admin/bullui', router);
 app.use('/admin/bullui', router);
-app.use('/nft/admin/bullui', router);
 
-app.use('/', indexRouter);
+app.use('/jobs', indexRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

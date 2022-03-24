@@ -83,7 +83,7 @@ router.get('/transfer', async function (req, res) {
   transferQueue.add({
     ...req.query
   }, {
-    attempts: 5,
+    attempts: 1,
   });
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200).json({
