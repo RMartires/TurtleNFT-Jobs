@@ -10,7 +10,7 @@ const { verifyWebhook } = require('./utill/verifyWebhook');
 require('dotenv').config();
 
 var indexRouter = require('./routes/index');
-var { contractQueue } = require("./utill/contractQueue");
+var { contractQueue, createProductQueue } = require("./utill/contractQueue");
 var { ordersQueue } = require("./utill/ordersQueue");
 var { transferQueue } = require("./utill/transferQueue");
 
@@ -24,7 +24,8 @@ app.use(cookieParser());
 const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBoard([
   new BullAdapter(contractQueue),
   new BullAdapter(ordersQueue),
-  new BullAdapter(transferQueue)
+  new BullAdapter(transferQueue),
+  new BullAdapter(createProductQueue)
 ]);
 
 app.use('/jobs/admin/bullui', router);

@@ -58,6 +58,7 @@ router.post('/ordersCreate', async function (req, res) {
       msg: "done"
     });
   } catch (err) {
+    console.log(err);
     if (err.message == "Unauthorized") {
       res.status(401).json({
         msg: 'Unauthorized'

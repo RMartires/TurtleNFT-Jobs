@@ -7,7 +7,7 @@ const { processContract } = require("../jobs/mian");
 const { CreateProductService } = require('../controllers/products');
 
 const contractQueue = new Queue('Contract', 'redis://127.0.0.1:6379');
-
+const createProductQueue = new Queue('Product', 'redis://127.0.0.1:6379');
 
 const blockScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/address/",
@@ -26,19 +26,39 @@ contractQueue.process(5, async function (job, done) {
             filename: job.data.filename
         }, job);
 
+        job.progress(50);
+
         await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
             ...deployedData,
         });
 
-        job.progress(50);
+        createProductQueue.add(job.data, { attempts: 5 });
 
+        console.log("done");
+        job.log("done");
+        job.progress(100);
+        done();
+    } catch (err) {
+        if (job.attemptsMade === 4) {
+            await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
+                deployedStatus: 'failed'
+            });
+        }
+        console.log(err);
+        done(new Error(err.message));
+
+    }
+});
+
+createProductQueue.process(5, async function (job, done) {
+    try {
         await CreateProductService(job.data.user, `${job.data.contractName}_${job.data.user}`);
 
         await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
             deployedStatus: 'published'
         });
 
-        job.progress(75);
+        job.progress(50);
 
         const contractArtifact =
             await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
@@ -63,10 +83,10 @@ contractQueue.process(5, async function (job, done) {
             });
         }
         console.log(err);
-        done(new Error(err.message));
-
+        done(err);
     }
 });
 
 
 exports.contractQueue = contractQueue;
+exports.createProductQueue = createProductQueue;
