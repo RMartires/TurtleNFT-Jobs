@@ -1,3 +1,4 @@
+const https = require("https");
 const { createProducts } = require('../utill/createProducts');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const axios = require('axios');
@@ -53,7 +54,9 @@ const CreateProductService = async (user, contractFileName) => {
     contract = contract.data();
 
     let data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
-        responseType: 'arraybuffer'
+        responseType: 'arraybuffer',
+        timeout: 100000,
+        httpsAgent: new https.Agent({ keepAlive: true }),
     });
     let encoded = Buffer.from(data.data, 'binary').toString('base64');
 

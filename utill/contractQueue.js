@@ -39,6 +39,9 @@ contractQueue.process(5, async function (job, done) {
         job.progress(100);
         done();
     } catch (err) {
+        if (err.message == "HH600: Compilation failed") {
+            await fs.unlink(`${__dirname}/../contracts/${job.data.filename}.sol`);
+        }
         if (job.attemptsMade === 4) {
             await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
                 deployedStatus: 'failed'
