@@ -82,7 +82,8 @@ createProductQueue.process(5, async function (job, done) {
     } catch (err) {
         if (job.attemptsMade === 1) {
             await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
-                deployedStatus: 'shopify-failed'
+                deployedStatus: 'shopify-failed',
+                shopifyerror: err.message
             });
         }
         console.log(err);
