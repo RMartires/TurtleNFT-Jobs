@@ -32,7 +32,7 @@ contractQueue.process(5, async function (job, done) {
             ...deployedData,
         });
 
-        createProductQueue.add(job.data, { attempts: 5 });
+        createProductQueue.add(job.data, { attempts: 2 });
 
         console.log("done");
         job.log("done");
@@ -80,9 +80,9 @@ createProductQueue.process(5, async function (job, done) {
         job.progress(100);
         done();
     } catch (err) {
-        if (job.attemptsMade === 4) {
+        if (job.attemptsMade === 1) {
             await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
-                deployedStatus: 'failed'
+                deployedStatus: 'shopify-failed'
             });
         }
         console.log(err);
