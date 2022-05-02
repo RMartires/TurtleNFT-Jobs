@@ -34,6 +34,7 @@ router.post('/ordersCreate', async function (req, res) {
     if (!req.auth) throw new Error("Unauthorized");
     let isNFT;
     let NFTItems = [];
+    console.log(req.body);
     req.body.line_items.forEach(item => {
       if (item.vendor = "Turtle NFT") {
         NFTItems.push(item);
