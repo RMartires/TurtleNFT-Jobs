@@ -48,7 +48,7 @@ router.post('/ordersCreate', async function (req, res) {
         att: 0,
         buyer: {
           email: req.body.email || req.body.contact_email,
-          name: req.body.shipping_address.name
+          name: req.body.shipping_address?.name || "user"
         }
       }, { delay: 10000 });
     }

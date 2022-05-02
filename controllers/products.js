@@ -53,11 +53,23 @@ const CreateProductService = async (user, contractFileName) => {
     if (!contract.exists()) throw new Error(`Error: contract ${contractFileName} does not exist`);
     contract = contract.data();
 
-    let data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
-        responseType: 'arraybuffer',
-        timeout: 100000,
-        httpsAgent: new https.Agent({ keepAlive: true }),
-    });
+    let data = null;
+
+    try {
+        data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
+            responseType: 'arraybuffer',
+            timeout: 100000,
+            httpsAgent: new https.Agent({ keepAlive: true }),
+        });
+    } catch (err) {
+        console.log(err)
+        data = await axios.get(`https://gateway.pinata.cloud/ipfs/${contract.tokens[0].image}`, {
+            responseType: 'arraybuffer',
+            timeout: 100000,
+            httpsAgent: new https.Agent({ keepAlive: true }),
+        });
+    }
+
     let encoded = Buffer.from(data.data, 'binary').toString('base64');
 
     await createProducts({
