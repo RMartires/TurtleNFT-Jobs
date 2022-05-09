@@ -74,6 +74,7 @@ createProductQueue.process(5, async function (job, done) {
                 rej(err);
             });
         });
+        await fs.rm(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol`, { recursive: true });
 
         console.log("done");
         job.log("done");
