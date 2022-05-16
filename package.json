@@ -16,6 +16,7 @@
     "bluebird-retry": "^0.11.0",
     "bull": "^4.1.0",
     "bull-board": "^2.1.3",
+    "canvas": "^2.9.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "dotenv": "^10.0.0",
@@ -23,11 +24,15 @@
     "filereader": "^0.10.3",
     "firebase": "^9.2.0",
     "generate-password": "^1.7.0",
+    "gif-encoder-2": "^1.0.5",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
+    "make-a-gif": "^4.1.2",
     "morgan": "~1.9.1",
+    "node-stream-zip": "^1.15.0",
     "nodemon": "^2.0.14",
     "raw-body": "^2.4.2",
+    "sha1": "^1.1.1",
     "uuid": "^8.3.2"
   },
   "scripts": {

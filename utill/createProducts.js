@@ -17,13 +17,21 @@ Shopify.Context.initialize({
 });
 
 const updateInventory = async (client, data) => {
-    let locations = await client.get({
-        path: 'locations',
+    let fulfillmentServices = await client.get({
+        path: 'fulfillment_services',
+        query: {
+            scope: 'all'
+        }
+    });
+    let FS = null;
+    fulfillmentServices.body.fulfillment_services.forEach(fs => {
+        if (fs.name == "FunggyFulfillmentService")
+            FS = fs;
     });
     await client.post({
         path: 'inventory_levels/set',
         data: {
-            "location_id": locations.body.locations[0].id,
+            "location_id": FS.location_id,
             "inventory_item_id": data.item_id,
             "available": data.number
         },
@@ -50,15 +58,24 @@ exports.createProducts = async (data) => {
         shopData = doc.data();
     });
 
-    let variantDefaults = { "inventory_management": "shopify", "inventory_policy": "deny" };
+    let variantDefaults = {
+        "inventory_management": "funggyfulfillmentservice",
+        "inventory_policy": "deny",
+        "fulfillment_service": "funggyfulfillmentservice",
+        "sku": "FNFT"
+    };
 
     const client = new Shopify.Clients.Rest(shopData.shop, shopData.accessToken);
     let r = await createProduct(client, {
         "body_html": data.body_html,
         "title": data.title,
-        "vendor": "Turtle NFT",
+        "vendor": "Funggy NFT Minter",
         "product_type": "NFT",
         "tags": ["NFT", ...data.tags],
+        "variants": [{
+            ...variantDefaults,
+            price: data.price
+        }]
     });
     await client.post({
         path: `products/${r.body.product.id}/images`,
@@ -67,19 +84,7 @@ exports.createProducts = async (data) => {
     });
 
     let variant = r.body.product.variants[0];
-    r = await client.put({
-        path: `variants/${variant.id}`,
-        data: {
-            "variant": {
-                "id": variant.id,
-                ...variantDefaults,
-                price: data.price
-            }
-        },
-        type: DataType.JSON,
-    });
-
-    let inventory_item_id = r.body.variant.inventory_item_id;
+    let inventory_item_id = variant.inventory_item_id;
     await updateInventory(client, { item_id: inventory_item_id, number: data.supply });
     await updateDoc(doc(db, "contracts", data.contractDocName), {
         deployedStatus: 'published'

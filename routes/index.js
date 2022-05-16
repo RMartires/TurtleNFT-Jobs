@@ -2,12 +2,15 @@ var express = require('express');
 var router = express.Router();
 
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
+const { fulfillmentNotification } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue } = require('../utill/transferQueue');
+const { genArtQueue } = require('../utill/genArtQueue');
+
 
 /* GET home page. */
 router.get('/processContract', async function (req, res) {
@@ -28,6 +31,7 @@ router.get('/processContract', async function (req, res) {
     });
   }
 });
+
 
 router.post('/ordersCreate', async function (req, res) {
   try {
@@ -92,5 +96,32 @@ router.get('/transfer', async function (req, res) {
     msg: "done"
   });
 });
+
+router.get('/gen-art', async function (req, res) {
+  try {
+    console.log(req.query);
+    genArtQueue.add(req.query);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({
+      msg: "done"
+    });
+  } catch (err) {
+    console.log(err);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(500).json({
+      msg: 'error'
+    });
+  }
+});
+
+router.post('/fulfillment_service/fulfillment_order_notification', fulfillmentNotification);
+
+router.post('/fulfillment_service', async (req, res) => {
+  console.log('/fulfillment_service');
+  console.log(req.body);
+  console.log(req.query);
+  console.log(req.params);
+});
+
 
 module.exports = router;

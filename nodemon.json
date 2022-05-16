@@ -1,0 +1,4 @@
+{
+  "verbose": false,
+  "ignore": ["modules/genart/*", "contracts/*", "artifacts/*", "cache/*"]
+}

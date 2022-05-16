@@ -1,6 +1,7 @@
 const https = require("https");
 const { createProducts } = require('../utill/createProducts');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
+const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 const axios = require('axios');
 const { db } = require('../utill/db');
 
@@ -55,19 +56,31 @@ const CreateProductService = async (user, contractFileName) => {
 
     let data = null;
 
-    try {
-        data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
+    if (contract.genArtContract) {
+        const storage = getStorage();
+        let storageRef = ref(storage, `users/${contract.shop.split(".")[0]}/${contract.contractName}/gifFile.gif`);
+        let url = await getDownloadURL(storageRef);
+        data = await axios.get(url, {
             responseType: 'arraybuffer',
             timeout: 100000,
             httpsAgent: new https.Agent({ keepAlive: true }),
         });
-    } catch (err) {
-        console.log(err)
-        data = await axios.get(`https://gateway.pinata.cloud/ipfs/${contract.tokens[0].image}`, {
-            responseType: 'arraybuffer',
-            timeout: 100000,
-            httpsAgent: new https.Agent({ keepAlive: true }),
-        });
+    } else {
+        try {
+            data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
+                responseType: 'arraybuffer',
+                timeout: 100000,
+                httpsAgent: new https.Agent({ keepAlive: true }),
+            });
+        } catch (err) {
+            console.log(err)
+            data = await axios.get(`https://gateway.pinata.cloud/ipfs/${contract.tokens[0].image}`, {
+                responseType: 'arraybuffer',
+                timeout: 100000,
+                httpsAgent: new https.Agent({ keepAlive: true }),
+            });
+        }
+
     }
 
     let encoded = Buffer.from(data.data, 'binary').toString('base64');
