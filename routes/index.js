@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
-const { fulfillmentNotification } = require("../controllers/fulfillment");
+const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
@@ -116,12 +116,8 @@ router.get('/gen-art', async function (req, res) {
 
 router.post('/fulfillment_service/fulfillment_order_notification', fulfillmentNotification);
 
-router.post('/fulfillment_service', async (req, res) => {
-  console.log('/fulfillment_service');
-  console.log(req.body);
-  console.log(req.query);
-  console.log(req.params);
-});
+router.get('/fulfillment_service/fetch_stock', fetchStock);
+router.get('/fulfillment_service/fetch_tracking_numbers', fetchTrackingNumbers);
 
 
 module.exports = router;
