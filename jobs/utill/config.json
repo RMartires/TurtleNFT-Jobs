@@ -1,4 +1,4 @@
 {
   "polygonMainnet": "https://matic-mainnet.chainstacklabs.com",
-  "polygonTestnet": "https://rpc-mumbai.matic.today"
+  "polygonTestnet": "https://matic-mumbai.chainstacklabs.com"
 }

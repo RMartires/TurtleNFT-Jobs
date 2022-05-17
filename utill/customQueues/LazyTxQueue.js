@@ -5,9 +5,9 @@ const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
 const { Promise } = require('bluebird');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL } = require("firebase/storage");
-const config = require('../jobs/utill/config.json');
-const { db } = require('../utill/db');
-const { pinJSON } = require('../jobs/utill/pinJSON');
+const config = require('../../jobs/utill/config.json');
+const { db } = require('../../utill/db');
+const { pinJSON } = require('../../jobs/utill/pinJSON');
 
 Shopify.Context.initialize({
     API_KEY: process.env.SHOPIFY_API_KEY,
@@ -20,7 +20,7 @@ Shopify.Context.initialize({
     SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
 });
 
-const transferQueue = new Queue('Transfer', 'redis://127.0.0.1:6379');
+const LazyTxQueue = new Queue('LazyTxTransfer', 'redis://127.0.0.1:6379');
 
 const gasStation = {
     "polygonMainnet": 'https://gasstation-mainnet.matic.network/',
@@ -32,7 +32,7 @@ const blockchainScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
 };
 
-transferQueue.process(5, async function (job, done) {
+LazyTxQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
         let order = await getDoc(doc(db, "orders", job.data.orderId));
@@ -52,15 +52,6 @@ transferQueue.process(5, async function (job, done) {
 
         job.progress(33);
 
-        let ipfsArr = await Promise.map(order.tokens, (token) => {
-            return pinJSON({
-                filename: token.filename,
-                data: token.tokenMeta
-            });
-        });
-
-        job.progress(50);
-
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
             let abi = files[tdx].data.abi;
@@ -69,21 +60,26 @@ transferQueue.process(5, async function (job, done) {
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-            console.log(order.buyerWallet, ipfsArr[tdx]);
+            console.log(order.buyerWallet);
 
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
 
-            let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
-            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
+            let tx = await contractInstance["mint(uint256)"](1,
                 {
                     gasPrice: ethers.BigNumber.from(gasPrice),
                     nonce: nonce
                 });
 
+            await tx.wait();
+
+            tx = await contractInstance["safeTransferFrom(address,address,uint256)"]
+                (process.env.Public_KEY, order.buyerWallet, 1, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce + 1 });
+
             let tokenID = await new Promise((res, rej) => {
-                contractInstance.on("ValueChanged", (author, newValue, event) => {
-                    res(parseInt(newValue._hex));
+                contractInstance.on("Transfer", (from, to, tokenId) => {
+                    console.log(from, to, tokenId);
+                    res(parseInt(tokenId._hex));
                 });
             });
             job.log(`minted: ${tokenID} ${tx.hash}`);
@@ -131,4 +127,4 @@ async function updateFulfillment(admin, orderId, fulfillment_id) {
 }
 
 
-exports.transferQueue = transferQueue;
+exports.LazyTxQueue = LazyTxQueue;

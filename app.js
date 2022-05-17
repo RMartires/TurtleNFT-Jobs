@@ -13,6 +13,8 @@ var indexRouter = require('./routes/index');
 var { contractQueue, createProductQueue } = require("./utill/contractQueue");
 var { ordersQueue } = require("./utill/ordersQueue");
 var { transferQueue } = require("./utill/transferQueue");
+const { LazyTxQueue } = require('./utill/customQueues');
+
 
 var app = express();
 
@@ -25,7 +27,8 @@ const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBo
   new BullAdapter(contractQueue),
   new BullAdapter(ordersQueue),
   new BullAdapter(transferQueue),
-  new BullAdapter(createProductQueue)
+  new BullAdapter(createProductQueue),
+  new BullAdapter(LazyTxQueue)
 ]);
 
 app.use('/jobs/admin/bullui', router);

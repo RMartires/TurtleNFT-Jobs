@@ -10,6 +10,7 @@ const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue } = require('../utill/transferQueue');
 const { genArtQueue } = require('../utill/genArtQueue');
+const { LazyTxQueue } = require('../utill/customQueues');
 
 
 /* GET home page. */
@@ -86,11 +87,19 @@ router.get('/CreateProduct', CreateProduct);
 router.get('/ChangePlan', ChangePlan);
 
 router.get('/transfer', async function (req, res) {
-  transferQueue.add({
-    ...req.query
-  }, {
-    attempts: 1,
-  });
+  if (req.query.custom) {
+    LazyTxQueue.add({
+      ...req.query
+    }, {
+      attempts: 1,
+    });
+  } else {
+    transferQueue.add({
+      ...req.query
+    }, {
+      attempts: 1,
+    });
+  }
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200).json({
     msg: "done"

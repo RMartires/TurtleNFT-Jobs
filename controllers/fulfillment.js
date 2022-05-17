@@ -41,7 +41,7 @@ exports.fulfillmentNotification = async (req, res) => {
             });
             await Promise.map(re.body.fulfillment_orders, async (order, odx) => {
                 if (r[odx].hasEmail) {
-                    ValidOrders.push(r[odx].order);
+                    ValidOrders.push({ ...r[odx].order, fulfillment_id: order.id });
                     await client.post({
                         path: `fulfillment_orders/${order.id}/fulfillment_request/accept`,
                         data: {
@@ -68,6 +68,7 @@ exports.fulfillmentNotification = async (req, res) => {
                     att: 0,
                     items: order.line_items,
                     id: order.id,
+                    fulfillment_id: order.fulfillment_id,
                     buyer: {
                         email: order.customer.email,
                         name: order.customer.first_name || "user"
