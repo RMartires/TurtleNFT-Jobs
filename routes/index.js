@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 
+const { doc, getDoc, updateDoc } = require("firebase/firestore");
+const { db } = require('../utill/db');
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
 const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
@@ -87,23 +89,35 @@ router.get('/CreateProduct', CreateProduct);
 router.get('/ChangePlan', ChangePlan);
 
 router.get('/transfer', async function (req, res) {
-  if (req.query.custom) {
-    LazyTxQueue.add({
-      ...req.query
-    }, {
-      attempts: 1,
+  try {
+    let order = await getDoc(doc(db, "orders", req.query.orderId));
+    order = order.data();
+
+    if (order.shop == "sockstourism.myshopify.com") {
+      LazyTxQueue.add({
+        ...req.query
+      }, {
+        attempts: 1,
+      });
+    } else {
+      transferQueue.add({
+        ...req.query
+      }, {
+        attempts: 1,
+      });
+    }
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({
+      msg: "done"
     });
-  } else {
-    transferQueue.add({
-      ...req.query
-    }, {
-      attempts: 1,
+
+  } catch (err) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(500).json({
+      msg: err.message
     });
   }
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.status(200).json({
-    msg: "done"
-  });
 });
 
 router.get('/gen-art', async function (req, res) {

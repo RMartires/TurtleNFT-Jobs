@@ -72,9 +72,7 @@ LazyTxQueue.process(5, async function (job, done) {
                 });
 
             await tx.wait();
-
-            tx = await contractInstance["safeTransferFrom(address,address,uint256)"]
-                (process.env.Public_KEY, order.buyerWallet, 1, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce + 1 });
+            job.progress(50);
 
             let tokenID = await new Promise((res, rej) => {
                 contractInstance.on("Transfer", (from, to, tokenId) => {
@@ -82,6 +80,10 @@ LazyTxQueue.process(5, async function (job, done) {
                     res(parseInt(tokenId._hex));
                 });
             });
+
+            tx = await contractInstance["safeTransferFrom(address,address,uint256)"]
+                (process.env.Public_KEY, order.buyerWallet, tokenID, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce + 1 });
+
             job.log(`minted: ${tokenID} ${tx.hash}`);
             return { tx: tx, tokenID: tokenID };
         }, { concurrency: 1 });
@@ -95,7 +97,7 @@ LazyTxQueue.process(5, async function (job, done) {
         // let txs = order.tokens;
         let admin = await getDoc(doc(db, "admins", order.shop));
         admin = admin.data();
-        await updateFulfillment(admin, order.orderId, order.fulfillment_id);
+        // await updateFulfillment(admin, order.orderId, order.fulfillment_id);
 
         job.progress(100);
 
