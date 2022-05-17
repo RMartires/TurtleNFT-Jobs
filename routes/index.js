@@ -116,8 +116,8 @@ router.get('/gen-art', async function (req, res) {
 
 router.post('/fulfillment_service/fulfillment_order_notification', fulfillmentNotification);
 
-router.get('/fulfillment_service/fetch_stock', fetchStock);
-router.get('/fulfillment_service/fetch_tracking_numbers', fetchTrackingNumbers);
+router.get('/fulfillment_service/fetch_stock.json', fetchStock);
+router.get('/fulfillment_service/fetch_tracking_numbers.json', fetchTrackingNumbers);
 
 
 module.exports = router;
