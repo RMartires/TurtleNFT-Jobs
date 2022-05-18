@@ -37,11 +37,14 @@ exports.fulfillmentNotification = async (req, res) => {
             });
 
             let r = await Promise.map(re.body.fulfillment_orders, (data) => {
-                return hasEmail({ line_items: data.line_items, fOrder: data });
+                return hasEmail(data);
             });
             await Promise.map(re.body.fulfillment_orders, async (order, odx) => {
                 if (r[odx].hasEmail) {
-                    ValidOrders.push({ ...r[odx].order, fulfillment_id: order.id });
+                    ValidOrders.push({
+                        ...r[odx].order,
+                        fulfillmentOrder: { id: order.id, line_items: order.line_items }
+                    });
                     await client.post({
                         path: `fulfillment_orders/${order.id}/fulfillment_request/accept`,
                         data: {
@@ -68,7 +71,7 @@ exports.fulfillmentNotification = async (req, res) => {
                     att: 0,
                     items: order.line_items,
                     id: order.id,
-                    fulfillment_id: order.fulfillment_id,
+                    fulfillmentOrder: order.fulfillmentOrder,
                     buyer: {
                         email: order.customer.email,
                         name: order.customer.first_name || "user"
@@ -110,29 +113,14 @@ exports.fulfillmentNotification = async (req, res) => {
 }
 
 const hasEmail = async (data) => {
-    let variants = await Promise.map(data.line_items, async (item) => {
-        let variant = await client.get({
-            path: `variants/${item.variant_id}`,
-        });
-        return variant.body.variant;
-    });
-
-    let products = await Promise.map(variants, async (variant) => {
-        let product = await client.get({
-            path: `products/${variant.product_id}`,
-        });
-        return product.body.product;
-    });
-
-    let isNFT = !(products.filter(x => x.vendor !== "Funggy NFT Minter").length > 0);
 
     let re = await client.get({
-        path: `orders/${data.fOrder.order_id}`
+        path: `orders/${data.order_id}`
     });
 
     let hasEmail = re.body.order?.customer?.email || re.body.order?.email;
 
-    return { hasEmail: hasEmail && isNFT, order: re.body.order };
+    return { hasEmail: hasEmail, order: re.body.order };
 };
 
 exports.fetchStock = async (req, res) => {

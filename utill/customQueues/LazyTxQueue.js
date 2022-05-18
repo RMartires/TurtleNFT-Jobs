@@ -85,7 +85,7 @@ LazyTxQueue.process(5, async function (job, done) {
                 (process.env.Public_KEY, order.buyerWallet, tokenID, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce + 1 });
 
             job.log(`minted: ${tokenID} ${tx.hash}`);
-            return { tx: tx, tokenID: tokenID };
+            return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
         }, { concurrency: 1 });
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
@@ -94,10 +94,19 @@ LazyTxQueue.process(5, async function (job, done) {
             TrackingNumbers: txs.map((tx) => tx.tx.hash)
         });
 
-        // let txs = order.tokens;
+        let TrackingInfo = txs.map((tx) => ({
+            number: tx.tx.hash,
+            url: `${blockchainScans[tx.blockchain]}${tx.tx.hash}`,
+            company: 'Funggy NFT Minter'
+        }));
+
         let admin = await getDoc(doc(db, "admins", order.shop));
         admin = admin.data();
-        // await updateFulfillment(admin, order.orderId, order.fulfillment_id);
+
+        let fulfillData = await CreateFulfillment(admin, order.fulfillmentOrder_id, TrackingInfo);
+        await updateDoc(doc(db, "orders", job.data.orderId), {
+            ...fulfillData
+        });
 
         job.progress(100);
 
@@ -113,19 +122,30 @@ LazyTxQueue.process(5, async function (job, done) {
 
 
 
-async function updateFulfillment(admin, orderId, fulfillment_id) {
-    // console.log(data);
+async function CreateFulfillment(admin, fulfillmentOrder_id, TrackingInfo) {
     const client = new Shopify.Clients.Rest(admin.shop, admin.accessToken);
-    await client.post({
-        path: `orders/${orderId}/fulfillments/${fulfillment_id}/events`,
+    let full = await client.post({
+        path: 'fulfillments',
         data: {
-            "status": "delivered",
-            "message": "NFT transfered"
+            fulfillment: {
+                message: "NFT transfered",
+                notify_customer: true,
+                line_items_by_fulfillment_order: [
+                    {
+                        fulfillment_order_id: fulfillmentOrder_id,
+                    }
+                ],
+                tracking_info: TrackingInfo[0],
+                tracking_urls: TrackingInfo.map(x => x.url),
+                tracking_numbers: TrackingInfo.map(x => x.number),
+                status: "success",
+                shipment_status: 'delivered'
+            }
         },
-        type: DataType.JSON,
+        type: DataType.JSON
     });
 
-    return;
+    return { fulfillment_name: full.body.fulfillment.name };
 }
 
 

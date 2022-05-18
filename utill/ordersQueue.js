@@ -29,6 +29,8 @@ ordersQueue.process(async function (job, done) {
         let admin = await getDoc(doc(db, "admins", job.data.shop));
         admin = admin.data();
 
+        let fulfillmentOrder = job.data.fulfillmentOrder;
+
         console.log(admin);
         const client = new Shopify.Clients.Rest(admin.shop, admin.accessToken);
         let risks = await retryGETRisk(client, job);
@@ -60,6 +62,7 @@ ordersQueue.process(async function (job, done) {
                         }
                     }
                 });
+
             } else {
                 const orderData = await createOrder(job.data, job.data.id, "manual");
                 const ShopData = await client.get({
@@ -98,6 +101,7 @@ async function createOrder(jobData, orderId, orderStatus) {
     let items = jobData.items;
     let shop = jobData.shop;
     let buyer = jobData.buyer;
+    let fulfillmentOrder_id = jobData.fulfillmentOrder.id;
 
     let contracts = await Promise.map(items, (item) => {
         return getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
@@ -131,7 +135,8 @@ async function createOrder(jobData, orderId, orderStatus) {
         password: password,
         shop: shop,
         progress: orderStatus,
-        buyer: buyer
+        buyer: buyer,
+        fulfillmentOrder_id: fulfillmentOrder_id,
     });
 
     return { UUID: UUID, password: password };
