@@ -14,6 +14,7 @@ var { contractQueue, createProductQueue } = require("./utill/contractQueue");
 var { ordersQueue } = require("./utill/ordersQueue");
 var { transferQueue } = require("./utill/transferQueue");
 const { LazyTxQueue } = require('./utill/customQueues');
+const { genArtQueue } = require("./utill/genArtQueue");
 
 
 var app = express();
@@ -28,6 +29,7 @@ const { router, setQueues, replaceQueues, addQueue, removeQueue } = createBullBo
   new BullAdapter(ordersQueue),
   new BullAdapter(transferQueue),
   new BullAdapter(createProductQueue),
+  new BullAdapter(genArtQueue),
   new BullAdapter(LazyTxQueue)
 ]);
 

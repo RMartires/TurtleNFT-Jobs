@@ -343,7 +343,7 @@ function shuffle(array) {
   return array;
 }
 
-const startCreating = async (shop, layerConfigurations) => {
+const startCreating = async (shop, layerConfigurations, job) => {
   let layerConfigIndex = 0;
   let editionCount = 1;
   let failedCount = 0;
@@ -434,6 +434,8 @@ const startCreating = async (shop, layerConfigurations) => {
         });
         dnaList.add(filterDNAOptions(newDna));
         editionCount++;
+        job.progress((editionCount / layerConfigurations[layerConfigIndex].growEditionSizeTo) * 70);
+        job.log(`editionCount: ${editionCount}`);
         abstractedIndexes.shift();
       } else {
         console.log("DNA exists!");

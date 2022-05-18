@@ -62,7 +62,7 @@ exports.createProducts = async (data) => {
         "inventory_management": "funggyfulfillmentservice",
         "inventory_policy": "deny",
         "fulfillment_service": "funggyfulfillmentservice",
-        "sku": "FNFT"
+        "sku": `FNFT-${data.title}`
     };
 
     const client = new Shopify.Clients.Rest(shopData.shop, shopData.accessToken);
@@ -87,7 +87,9 @@ exports.createProducts = async (data) => {
     let inventory_item_id = variant.inventory_item_id;
     await updateInventory(client, { item_id: inventory_item_id, number: data.supply });
     await updateDoc(doc(db, "contracts", data.contractDocName), {
-        deployedStatus: 'published'
+        deployedStatus: 'published',
+        sku: `FNFT-${data.title}`,
+        inventory: data.supply
     });
 
     return;

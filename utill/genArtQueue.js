@@ -88,8 +88,8 @@ genArtQueue.process(async function (job, done) {
 
         console.log(layerConfigurations[0].layersOrder);
 
-        job.progress(33);
-        let res = await startCreating(shop, layerConfigurations);
+        job.progress(1);
+        let res = await startCreating(shop, layerConfigurations, job);
 
         job.progress(66);
         const storage = getStorage();
