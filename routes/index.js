@@ -93,7 +93,7 @@ router.get('/transfer', async function (req, res) {
     let order = await getDoc(doc(db, "orders", req.query.orderId));
     order = order.data();
 
-    if (order.shop == "sockstourism.myshopify.com") {
+    if (order.shop == "temp.myshopify.com") {
       LazyTxQueue.add({
         ...req.query
       }, {

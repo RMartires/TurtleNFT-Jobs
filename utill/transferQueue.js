@@ -7,7 +7,8 @@ const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 const config = require('../jobs/utill/config.json');
 const { db } = require('../utill/db');
-const { pinJSON } = require('../jobs/utill/pinJSON');
+const { pinJSON, pinFile } = require('../jobs/utill/pinJSON');
+const { async } = require('node-stream-zip');
 
 Shopify.Context.initialize({
     API_KEY: process.env.SHOPIFY_API_KEY,
@@ -52,6 +53,7 @@ transferQueue.process(5, async function (job, done) {
 
         job.progress(33);
 
+
         let ipfsArr = await Promise.map(order.tokens, (token) => {
             return pinJSON({
                 filename: token.filename,
@@ -63,19 +65,31 @@ transferQueue.process(5, async function (job, done) {
 
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
+
+            let hash = ipfsArr[tdx];
+            let URI = `https://ipfs.io/ipfs/${hash}`;
+            let mintArgs = [order.buyerWallet, URI];
+            let mintFunction = "createNFT(address,string)";
+
+
+            if (token.genArtContract) {
+                mintFunction = "createNFT(address,string,uint256)";
+                let args = await genArtContractSetup(token);
+                mintArgs = [order.buyerWallet, ...args];
+            }
+
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let nonce = await provider.getTransactionCount(process.env.Public_KEY);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-            console.log(order.buyerWallet, ipfsArr[tdx]);
 
+            console.log(mintArgs);
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
 
-            let URI = `https://ipfs.io/ipfs/${ipfsArr[tdx]}`;
-            let tx = await contractInstance["createNFT(address,string)"](order.buyerWallet, URI,
+            let tx = await contractInstance[mintFunction](...mintArgs,
                 {
                     gasPrice: ethers.BigNumber.from(gasPrice),
                     nonce: nonce
@@ -150,5 +164,29 @@ async function CreateFulfillment(admin, fulfillmentOrder_id, TrackingInfo) {
     return { fulfillment_name: full.body.fulfillment.name };
 }
 
+async function genArtContractSetup(token) {
+    let shop = token.shop.split(".")[0];
+
+    const storage = getStorage();
+    let storageRef = ref(storage, `users/${shop}/${token.contractName}/images/${token.RandomId}.png`);
+    let url = await getDownloadURL(storageRef);
+    let filename = `${token.contractName}#${token.RandomId}`;
+    let Imagehash = await pinFile({ image_url: url, name: filename });
+
+    storageRef = ref(storage, `users/${shop}/${token.contractName}/json/${token.RandomId}.json`);
+    url = await getDownloadURL(storageRef);
+    let tokenMeta = await axios.get(url);
+    tokenMeta = tokenMeta.data;
+    tokenMeta.image = `https://ipfs.io/ipfs/${Imagehash}`;
+
+    let hash = await pinJSON({
+        filename: filename,
+        data: tokenMeta
+    });
+
+    let URI = `https://ipfs.io/ipfs/${hash}`;
+
+    return [URI, token.RandomId];
+}
 
 exports.transferQueue = transferQueue;

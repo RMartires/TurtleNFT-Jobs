@@ -102,11 +102,22 @@ async function createOrder(jobData, orderId, orderStatus) {
     let shop = jobData.shop;
     let buyer = jobData.buyer;
     let fulfillmentOrder_id = jobData.fulfillmentOrder.id;
+    let RandomId = null;
 
-    let contracts = await Promise.map(items, (item) => {
-        return getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
+    let contracts = await Promise.map(items, async (item) => {
+        let contract = await getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
+        contract = contract.data();
+        if (contract.genArtContract) {
+            var index = Math.floor(Math.random() * contract.IdsToMint.length);
+            let newIdsToMint = [...contract.IdsToMint];
+            RandomId = newIdsToMint.splice(index, 1)[0];
+            await updateDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`), {
+                IdsToMint: newIdsToMint
+            });
+            contract.RandomId = RandomId;
+        }
+        return contract;
     });
-    contracts = contracts.map(con => con.data());
     let newItems = [];
     items.forEach((item, idx) => {
         let token = contracts[idx].tokenToMint;
@@ -120,6 +131,8 @@ async function createOrder(jobData, orderId, orderStatus) {
                 contractName: contracts[idx].contractName,
                 shop: contracts[idx].shop,
                 blockchain: contracts[idx].blockchain,
+                RandomId: contracts[idx].RandomId,
+                genArtContract: contracts[idx].genArtContract
             });
         }
     });
