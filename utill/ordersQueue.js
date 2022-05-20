@@ -132,7 +132,7 @@ async function createOrder(jobData, orderId, orderStatus) {
                 shop: contracts[idx].shop,
                 blockchain: contracts[idx].blockchain,
                 RandomId: contracts[idx].RandomId,
-                genArtContract: contracts[idx].genArtContract
+                genArtContract: contracts[idx].genArtContract || false
             });
         }
     });
