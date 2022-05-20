@@ -131,7 +131,7 @@ async function createOrder(jobData, orderId, orderStatus) {
                 contractName: contracts[idx].contractName,
                 shop: contracts[idx].shop,
                 blockchain: contracts[idx].blockchain,
-                RandomId: contracts[idx].RandomId,
+                RandomId: contracts[idx].RandomId || false,
                 genArtContract: contracts[idx].genArtContract || false
             });
         }
