@@ -435,7 +435,7 @@ const startCreating = async (shop, layerConfigurations, job) => {
           console.log(
             `You need more layers or elements to grow your edition to ${layerConfigurations[layerConfigIndex].growEditionSizeTo} artworks!`
           );
-          process.exit();
+          // process.exit();
         }
       }
     }
