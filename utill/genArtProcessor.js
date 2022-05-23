@@ -4,10 +4,10 @@ const { Promise } = require('bluebird');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL, listAll, uploadBytes } = require("firebase/storage");
 const StreamZip = require('node-stream-zip');
-const { db } = require('./db');
+let { db, connectDB } = require('./db');
 const { startCreating } = require('../modules/genart/index');
 const { download_image } = require('./downloadImage');
-
+require('dotenv').config();
 
 const { contractQueue } = require('../utill/contractQueue');
 
@@ -69,6 +69,7 @@ var JsonToArray = function (json) {
 module.exports = async function (job, done) {
     console.log(job.data);
     try {
+        db = await connectDB();
         let Contract = await getDoc(doc(db, "contracts", job.data.filename));
         if (!Contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         Contract = Contract.data();
@@ -118,7 +119,9 @@ module.exports = async function (job, done) {
         job.progress(100);
         done();
     } catch (err) {
+        console.log('hit1');
         console.log(err);
         done(new Error(err.message));
     }
 }
+

@@ -181,19 +181,10 @@ const addAttributes = (_element) => {
 };
 
 const loadLayerImg = async (_layer) => {
-  try {
-    return new Promise(async (resolve) => {
-      try {
-        const image = await loadImage(`${_layer.selectedElement.path}`); //auto gets the selected layer wrapper
-        resolve({ layer: _layer, loadedImage: image });
-      } catch (e) {
-        console.log(_layer.selectedElement.path);
-        console.log(e);
-      }
-    });
-  } catch (error) {
-    console.error("Error loading image:", error);
-  }
+  return new Promise(async (resolve) => {
+    const image = await loadImage(`${_layer.selectedElement.path}`); //auto gets the selected layer wrapper
+    resolve({ layer: _layer, loadedImage: image });
+  });
 };
 
 const addText = (_sig, x, y, size) => {

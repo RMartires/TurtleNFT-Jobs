@@ -19,6 +19,14 @@ signInAnonymously(auth).then(() => {
         // ...
     });
 
+async function connectDB() {
+    const auth = getAuth();
+    await signInAnonymously(auth);
+    console.log("Connected to db");
+    return getFirestore();
+}
+
 const db = getFirestore();
 
 exports.db = db;
+exports.connectDB = connectDB;
