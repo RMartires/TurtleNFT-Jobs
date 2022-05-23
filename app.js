@@ -19,7 +19,15 @@ const { genArtQueue } = require("./utill/genArtQueue");
 
 var app = express();
 
-app.use(logger('dev'));
+app.use(logger('dev', {
+  skip: function (req, res) {
+    if (req.url.includes('/queues')) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}));
 app.use(express.json({ verify: verifyWebhook }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
