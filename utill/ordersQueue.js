@@ -107,7 +107,7 @@ async function createOrder(jobData, orderId, orderStatus) {
     let contracts = await Promise.map(items, async (item) => {
         let contract = await getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
         contract = contract.data();
-        if (contract?.type = "genArtContract") {
+        if (contract?.type == "genArtContract") {
             var index = Math.floor(Math.random() * contract.IdsToMint.length);
             let newIdsToMint = [...contract.IdsToMint];
             RandomId = newIdsToMint.splice(index, 1)[0];
@@ -115,12 +115,23 @@ async function createOrder(jobData, orderId, orderStatus) {
                 IdsToMint: newIdsToMint
             });
             contract.RandomId = RandomId;
+        } else if (contract?.type == "multi-asset") {
+            var index = Math.floor(Math.random() * contract.tokensToMint.length);
+            let newTokensToMint = [...contract.tokensToMint];
+            let RandomToken = newTokensToMint.splice(index, 1)[0];
+            await updateDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`), {
+                tokensToMint: newTokensToMint
+            });
+            contract.RandomId = RandomToken.Id;
+            contract.RandomToken = RandomToken;
         }
         return contract;
     });
     let newItems = [];
     items.forEach((item, idx) => {
         let token = contracts[idx].tokenToMint;
+        if (contracts[idx]?.type == "multi-asset")
+            token = contracts[idx].RandomToken;
         for (let i = 0; i < item.quantity; i++) {
             newItems.push({
                 name: item.name,

@@ -20,7 +20,7 @@ async function processContract(data, job) {
 
 
     await createContract(data.filename, data.contract.contractName,
-        data.contract.contractSymbol, data.contract.tokens[0].number, data.contract?.type == "genArtContract");
+        data.contract.contractSymbol, data.contract.tokens[0].number, ["genArtContract", "multi-asset"].indexOf(data.contract?.type) > -1);
     await hre.run("compile");
     job.log("Contract Compiled");
 
@@ -94,10 +94,33 @@ async function processContract(data, job) {
     };
 
     let IdsToMint = null;
-    if (data.contract?.type = "genArtContract")
+    if (data.contract?.type == "genArtContract")
         IdsToMint = Array.from({ length: data.contract.tokens[0].number }, (v, i) => i + 1);
 
-    return { tokenToMint: tokenToMint, contractAddress: nft.address, IdsToMint }
+    let tokensToMint = null;
+    if (data.contract?.type == "multi-asset") {
+        tokensToMint = [];
+        tokenId = 1;
+        data.contract.tokens.forEach(token => {
+            let temp = {
+                filename: token.title,
+                data: {
+                    name: token.title,
+                    description: token.description,
+                    image: `ipfs://${token.image}`,
+                }
+            };
+            let tokens = Array.from({ length: token.number }).map((x, xdx) => {
+                let finalToken = { ...temp, Id: tokenId };
+                tokenId = tokenId + 1;
+                return finalToken;
+            });
+            tokensToMint.push(...tokens);
+        });
+    }
+
+
+    return { tokenToMint: tokenToMint, contractAddress: nft.address, IdsToMint, tokensToMint }
 }
 
 // async function mintToken(contract, data) {

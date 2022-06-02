@@ -4,6 +4,7 @@ const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 const axios = require('axios');
 const { db } = require('../utill/db');
+const { createGif } = require('../utill/createGif');
 
 const blockchains = {
     "polygonTestnet": "Polygon Testnet",
@@ -65,6 +66,8 @@ const CreateProductService = async (user, contractFileName) => {
             timeout: 100000,
             httpsAgent: new https.Agent({ keepAlive: true }),
         });
+    } if (contract?.type == "multi-asset") {
+        data = await createGif(contract.tokens.map(token => token.image));
     } else {
         try {
             data = await axios.get(`https://ipfs.io/ipfs/${contract.tokens[0].image}`, {
@@ -85,6 +88,10 @@ const CreateProductService = async (user, contractFileName) => {
 
     let encoded = Buffer.from(data.data, 'binary').toString('base64');
 
+    let supply = contract.tokens[0].number;
+    if (contract?.type == "multi-asset")
+        supply = contract.tokens.reduce((acc, curr) => acc + curr.number, 0);
+
     await createProducts({
         shop: `${user}.myshopify.com`,
         body_html: `<h2>${contract.contractName}</h2>
@@ -96,7 +103,7 @@ const CreateProductService = async (user, contractFileName) => {
         tags: ["NFT"],
         contractDocName: contractFileName,
         image64: encoded,
-        supply: contract.tokens[0].number,
+        supply: supply,
         price: contract.tokens[0].price
     });
 

@@ -21,6 +21,7 @@ contractQueue.process(5, async function (job, done) {
         if (!contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         contract = contract.data();
 
+
         const deployedData = await processContract({
             contract: contract,
             filename: job.data.filename
