@@ -20,7 +20,7 @@ async function processContract(data, job) {
 
 
     await createContract(data.filename, data.contract.contractName,
-        data.contract.contractSymbol, data.contract.tokens[0].number, data.contract.genArtContract);
+        data.contract.contractSymbol, data.contract.tokens[0].number, data.contract?.type == "genArtContract");
     await hre.run("compile");
     job.log("Contract Compiled");
 
@@ -94,7 +94,7 @@ async function processContract(data, job) {
     };
 
     let IdsToMint = null;
-    if (data.contract.genArtContract)
+    if (data.contract?.type = "genArtContract")
         IdsToMint = Array.from({ length: data.contract.tokens[0].number }, (v, i) => i + 1);
 
     return { tokenToMint: tokenToMint, contractAddress: nft.address, IdsToMint }

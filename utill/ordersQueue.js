@@ -107,7 +107,7 @@ async function createOrder(jobData, orderId, orderStatus) {
     let contracts = await Promise.map(items, async (item) => {
         let contract = await getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
         contract = contract.data();
-        if (contract.genArtContract) {
+        if (contract?.type = "genArtContract") {
             var index = Math.floor(Math.random() * contract.IdsToMint.length);
             let newIdsToMint = [...contract.IdsToMint];
             RandomId = newIdsToMint.splice(index, 1)[0];
@@ -132,7 +132,7 @@ async function createOrder(jobData, orderId, orderStatus) {
                 shop: contracts[idx].shop,
                 blockchain: contracts[idx].blockchain,
                 RandomId: contracts[idx].RandomId || false,
-                genArtContract: contracts[idx].genArtContract || false
+                type: contracts[idx]?.type
             });
         }
     });

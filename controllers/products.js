@@ -56,7 +56,7 @@ const CreateProductService = async (user, contractFileName) => {
 
     let data = null;
 
-    if (contract.genArtContract) {
+    if (contract?.type == "genArtContract") {
         const storage = getStorage();
         let storageRef = ref(storage, `users/${contract.shop.split(".")[0]}/${contract.contractName}/gifFile.gif`);
         let url = await getDownloadURL(storageRef);

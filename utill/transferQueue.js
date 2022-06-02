@@ -72,7 +72,7 @@ transferQueue.process(5, async function (job, done) {
             let mintFunction = "createNFT(address,string)";
 
 
-            if (token.genArtContract) {
+            if (token.type == "genArtContract") {
                 mintFunction = "createNFT(address,string,uint256)";
                 let args = await genArtContractSetup(token);
                 mintArgs = [order.buyerWallet, ...args];
