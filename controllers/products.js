@@ -89,9 +89,12 @@ const CreateProductService = async (user, contractFileName) => {
     let encoded = Buffer.from(data.data, 'binary').toString('base64');
 
     let supply = contract.tokens[0].number;
-    if (contract?.type == "multi-asset")
-        supply = contract.tokens.reduce((acc, curr) => acc + curr.number, 0);
+    let price = contract.tokens[0].price;
 
+    if (contract?.type == "multi-asset") {
+        supply = contract.tokens.reduce((acc, curr) => acc + curr.number, 0);
+        price = contract.price;
+    }
     await createProducts({
         shop: `${user}.myshopify.com`,
         body_html: `<h2>${contract.contractName}</h2>
@@ -104,7 +107,7 @@ const CreateProductService = async (user, contractFileName) => {
         contractDocName: contractFileName,
         image64: encoded,
         supply: supply,
-        price: contract.tokens[0].price
+        price: price
     });
 
     return;
