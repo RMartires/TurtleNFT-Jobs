@@ -1,7 +1,13 @@
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const Queue = require('bull');
 let { db } = require('./db');
-const genArtQueue = new Queue('GenArt', 'redis://127.0.0.1:6379');
+const genArtQueue = new Queue('GenArt', {
+    redis: {
+        port: 6379,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASSWORD,
+    },
+});
 
 genArtQueue.process(`${__dirname}/genArtProcessor.js`);
 

@@ -6,8 +6,20 @@ const { db } = require('../utill/db');
 const { processContract } = require("../jobs/mian");
 const { CreateProductService } = require('../controllers/products');
 
-const contractQueue = new Queue('Contract', 'redis://127.0.0.1:6379');
-const createProductQueue = new Queue('Product', 'redis://127.0.0.1:6379');
+const contractQueue = new Queue('Contract', {
+    redis: {
+        port: 6379,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASSWORD,
+    },
+});
+const createProductQueue = new Queue('Product', {
+    redis: {
+        port: 6379,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASSWORD,
+    },
+});
 
 const blockScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/address/",

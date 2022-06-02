@@ -20,7 +20,13 @@ Shopify.Context.initialize({
     SESSION_STORAGE: new Shopify.Session.MemorySessionStorage(),
 });
 
-const LazyTxQueue = new Queue('LazyTxTransfer', 'redis://127.0.0.1:6379');
+const LazyTxQueue = new Queue('LazyTxTransfer', {
+    redis: {
+        port: 6379,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASSWORD,
+    },
+});
 
 const gasStation = {
     "polygonMainnet": 'https://gasstation-mainnet.matic.network/',

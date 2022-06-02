@@ -21,7 +21,13 @@ Shopify.Context.initialize({
 });
 
 
-const ordersQueue = new Queue('Orders', 'redis://127.0.0.1:6379');
+const ordersQueue = new Queue('Orders', {
+    redis: {
+        port: 6379,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASSWORD,
+    },
+});
 
 ordersQueue.process(async function (job, done) {
     try {
