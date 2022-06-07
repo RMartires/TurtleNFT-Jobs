@@ -55,7 +55,7 @@ ordersQueue.process(async function (job, done) {
             return null;
         } else {
             if (risks[0].recommendation == 'accept') {
-                const orderData = await createOrder(job.data, job.data.id, "");
+                const orderData = await createOrder(job.data, job.data.id, null);
                 await axios({
                     method: 'POST',
                     url: `${process.env.FUNCTIONS}/sendOrderEmail`,
