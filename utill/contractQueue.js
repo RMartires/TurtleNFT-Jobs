@@ -45,6 +45,20 @@ contractQueue.process(5, async function (job, done) {
             ...deployedData,
         });
 
+        const contractArtifact =
+            await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
+        const storage = getStorage();
+        const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
+        await new Promise((res, rej) => {
+            uploadBytes(storageRef, contractArtifact).then((snapshot) => {
+                res("Done");
+            }).catch(err => {
+                rej(err);
+            });
+        });
+        await fs.rm(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol`, { recursive: true });
+
+
         createProductQueue.add(job.data, { attempts: 2 });
 
         console.log("done");
@@ -75,19 +89,6 @@ createProductQueue.process(5, async function (job, done) {
         });
 
         job.progress(50);
-
-        const contractArtifact =
-            await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
-        const storage = getStorage();
-        const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
-        await new Promise((res, rej) => {
-            uploadBytes(storageRef, contractArtifact).then((snapshot) => {
-                res("Done");
-            }).catch(err => {
-                rej(err);
-            });
-        });
-        await fs.rm(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol`, { recursive: true });
 
         console.log("done");
         job.log("done");
