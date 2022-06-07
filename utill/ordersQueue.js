@@ -125,6 +125,7 @@ async function createOrder(jobData, orderId, orderStatus) {
             var index = Math.floor(Math.random() * contract.tokensToMint.length);
             let newTokensToMint = [...contract.tokensToMint];
             let RandomToken = newTokensToMint.splice(index, 1)[0];
+            console.log(RandomToken, buyer);
             await updateDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`), {
                 tokensToMint: newTokensToMint
             });
@@ -157,6 +158,16 @@ async function createOrder(jobData, orderId, orderStatus) {
     let password = generator.generate({
         length: 10,
         numbers: true
+    });
+    console.log({
+        orderId: orderId,
+        tokens: newItems,
+        uuid: UUID,
+        password: password,
+        shop: shop,
+        progress: orderStatus,
+        buyer: buyer,
+        fulfillmentOrder_id: fulfillmentOrder_id,
     });
     await setDoc(doc(db, "orders", `${UUID}`), {
         orderId: orderId,

@@ -104,7 +104,7 @@ async function processContract(data, job) {
         data.contract.tokens.forEach(token => {
             let temp = {
                 filename: token.title,
-                data: {
+                metaData: {
                     name: token.title,
                     description: token.description,
                     image: `ipfs://${token.image}`,
