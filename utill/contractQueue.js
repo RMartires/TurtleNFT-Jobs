@@ -33,6 +33,7 @@ contractQueue.process(5, async function (job, done) {
         if (!contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         contract = contract.data();
 
+        if (contract.deployedStatus == "published") throw new Error("Error: this contract is already published");
 
         const deployedData = await processContract({
             contract: contract,
