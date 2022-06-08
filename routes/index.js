@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-const { doc, getDoc, updateDoc } = require("firebase/firestore");
+const { doc, getDoc, updateDoc, setDoc } = require("firebase/firestore");
 const { db } = require('../utill/db');
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
 const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
@@ -35,6 +35,49 @@ router.get('/processContract', async function (req, res) {
   }
 });
 
+router.get('/getOrder', async function (req, res) {
+  try {
+    console.log(req.query);
+    let order = await getDoc(doc(db, "orders", req.query.orderId));
+    order = order.data();
+
+    let login = false;
+    if (order.password == req.query.password) {
+      login = order;
+    }
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({
+      msg: "done",
+      orderData: login
+    });
+  } catch (err) {
+    console.log(err);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(500).json({
+      msg: 'error'
+    });
+  }
+});
+
+router.get('/setAccount', async function (req, res) {
+  try {
+    await setDoc(doc(db, "orders", req.query.orderId), {
+      buyerWallet: req.query.buyerWallet
+    }, { merge: true });
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(200).json({
+      msg: "done",
+    });
+  } catch (err) {
+    console.log(err);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(500).json({
+      msg: 'error'
+    });
+  }
+});
 
 router.post('/ordersCreate', async function (req, res) {
   try {
