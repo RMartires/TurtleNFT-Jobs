@@ -3,7 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const { createBullBoard } = require('bull-board')
+const { createBullBoard } = require('bull-board');
+const cors = require("cors");
 const { BullAdapter } = require('bull-board/bullAdapter')
 const { verifyWebhook } = require('./utill/verifyWebhook');
 
@@ -28,6 +29,8 @@ app.use(logger('dev', {
     }
   }
 }));
+
+app.use(cors());
 app.use(express.json({ verify: verifyWebhook }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
