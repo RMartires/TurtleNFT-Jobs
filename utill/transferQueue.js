@@ -91,6 +91,7 @@ transferQueue.process(5, async function (job, done) {
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+            console.log(nonce);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);

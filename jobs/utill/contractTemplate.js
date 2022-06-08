@@ -22,7 +22,7 @@ contract ${contractName} is ERC721URIStorage {
         returns (uint256)
     {
         uint256 currenttokenId = _tokenIds.current();
-        require(currenttokenId < TOTAL_SUPPLY, "Max supply reached");
+        require(currenttokenId <= TOTAL_SUPPLY, "Max supply reached");
 
         _tokenIds.increment();
         
@@ -59,7 +59,7 @@ contract ${contractName} is ERC721URIStorage {
         public
         returns (uint256)
     {
-        require(newItemId < TOTAL_SUPPLY, "Max supply reached");
+        require(newItemId <= TOTAL_SUPPLY, "Max supply reached");
 
         _mint(recipient, newItemId);
         _setTokenURI(newItemId, uri);
