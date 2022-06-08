@@ -66,6 +66,7 @@ router.get('/getOrder', async function (req, res) {
 
 router.get('/setAccount', async function (req, res) {
   try {
+    console.log(req.query.orderId);
     await setDoc(doc(db, "orders", req.query.orderId), {
       buyerWallet: req.query.buyerWallet
     }, { merge: true });
