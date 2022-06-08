@@ -47,6 +47,8 @@ router.get('/getOrder', async function (req, res) {
     }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
     res.status(200).json({
       msg: "done",
       orderData: login
@@ -54,6 +56,8 @@ router.get('/getOrder', async function (req, res) {
   } catch (err) {
     console.log(err);
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
     res.status(500).json({
       msg: 'error'
     });
@@ -67,12 +71,16 @@ router.get('/setAccount', async function (req, res) {
     }, { merge: true });
 
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
     res.status(200).json({
       msg: "done",
     });
   } catch (err) {
     console.log(err);
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
     res.status(500).json({
       msg: 'error'
     });
