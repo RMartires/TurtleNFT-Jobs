@@ -35,6 +35,10 @@ ordersQueue.process(async function (job, done) {
         let admin = await getDoc(doc(db, "admins", job.data.shop));
         admin = admin.data();
 
+        let basePath = "https://tophatturtle.in/nft";
+        if (admin?.claim?.type == "custom")
+            basePath = admin.claim.basePath;
+
         let fulfillmentOrder = job.data.fulfillmentOrder;
 
         console.log(admin);
@@ -63,7 +67,7 @@ ordersQueue.process(async function (job, done) {
                         buyer: job.data.buyer,
                         order: {
                             shop: job.data.shop,
-                            link: `https://tophatturtle.in/nft?id=${orderData.UUID}`,
+                            link: `${basePath}?id=${orderData.UUID}`,
                             password: orderData.password
                         }
                     }
