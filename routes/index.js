@@ -1,8 +1,11 @@
 var express = require('express');
 var router = express.Router();
 
+const axios = require('axios');
 const { doc, getDoc, updateDoc, setDoc } = require("firebase/firestore");
+const { getStorage, ref, uploadBytes, getDownloadURL } = require("firebase/storage");
 const { db } = require('../utill/db');
+const { pinJSON } = require('../jobs/utill/pinJSON');
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
 const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
@@ -63,6 +66,42 @@ router.get('/getOrder', async function (req, res) {
     });
   }
 });
+
+router.post('/getTokenData', async function (req, res) {
+  try {
+
+    const storage = getStorage();
+    const storageRef = ref(storage, `artifacts/${req.body.contractName}_${req.body.user}.json`);
+    const download_url = await getDownloadURL(storageRef);
+    let data = await axios.get(download_url);
+    let abi = data.data.abi;
+
+    let hash = await pinJSON({
+      filename: req.body.token.filename,
+      data: req.body.token.metaData
+    });
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.status(200).json({
+      msg: "done",
+      data: {
+        url: `https://ipfs.io/ipfs/${hash}`,
+        abi
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.status(500).json({
+      msg: 'error'
+    });
+  }
+});
+
 
 router.get('/setAccount', async function (req, res) {
   try {
