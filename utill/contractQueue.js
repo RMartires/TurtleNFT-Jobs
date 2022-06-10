@@ -1,5 +1,6 @@
 const Queue = require('bull');
 const fs = require('fs/promises');
+const axios = require("axios");
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { db } = require('../utill/db');
@@ -48,6 +49,7 @@ contractQueue.process(5, async function (job, done) {
 
         const contractArtifact =
             await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
+
         const storage = getStorage();
         const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
         await new Promise((res, rej) => {

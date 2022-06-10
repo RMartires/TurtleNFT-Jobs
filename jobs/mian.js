@@ -20,7 +20,10 @@ async function processContract(data, job) {
 
 
     await createContract(data.filename, data.contract.contractName,
-        data.contract.contractSymbol, data.contract.tokens[0].number, ["genArtContract", "multi-asset"].indexOf(data.contract?.type) > -1);
+        data.contract.contractSymbol, data.contract.tokens[0].number,
+        ["genArtContract", "multi-asset"].indexOf(data.contract?.type) > -1,
+        data.contract
+    );
     await hre.run("compile");
     job.log("Contract Compiled");
 
@@ -36,8 +39,12 @@ async function processContract(data, job) {
     // let deployedData = NFT.interface.encodeDeploy();
     // let estimateGas = await provider.estimateGas({ data: deployedData });
     // console.log(estimateGas);
+    let deployArgs = [];
+    if (data.contract.biconomy) {
+        deployArgs = [process.env.BICONIMY_FORWARD];
+    }
 
-    let nft = await NFT.deploy({
+    let nft = await NFT.deploy(...deployArgs, {
         gasPrice: ethers.BigNumber.from(gasPrice),
         // gasLimit: estimateGas,
         nonce: nonce
