@@ -102,6 +102,39 @@ router.post('/getTokenData', async function (req, res) {
   }
 });
 
+router.post('/setToken', async function (req, res) {
+  try {
+
+    let order = await getDoc(doc(db, "orders", req.body.orderId));
+    order = order.data();
+
+    let tokens = order.tokens;
+    let token = tokens[req.body.index];
+    token.tx = req.body.hash;
+
+    tokens[req.body.index] = token;
+
+    await setDoc(doc(db, "orders", req.body.orderId), {
+      tokens: tokens
+    }, { merge: true });
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.status(200).json({
+      msg: "done"
+    });
+  } catch (err) {
+    console.log(err);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.status(500).json({
+      msg: 'error'
+    });
+  }
+});
+
 
 router.get('/setAccount', async function (req, res) {
   try {
