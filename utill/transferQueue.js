@@ -201,3 +201,4 @@ async function genArtContractSetup(token) {
 }
 
 exports.transferQueue = transferQueue;
+exports.CreateFulfillment = CreateFulfillment;

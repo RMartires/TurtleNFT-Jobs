@@ -13,9 +13,14 @@ const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
-const { transferQueue } = require('../utill/transferQueue');
+const { transferQueue, CreateFulfillment } = require('../utill/transferQueue');
 const { genArtQueue } = require('../utill/genArtQueue');
 const { LazyTxQueue } = require('../utill/customQueues');
+
+const blockchainScans = {
+  "polygonMainnet": "https://polygonscan.com/tx/",
+  "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
+};
 
 
 /* GET home page. */
@@ -117,6 +122,21 @@ router.post('/setToken', async function (req, res) {
     await setDoc(doc(db, "orders", req.body.orderId), {
       tokens: tokens
     }, { merge: true });
+
+
+    if (!tokens.map(t => t.tx).includes(undefined)) {
+      let admin = await getDoc(doc(db, "admins", order.shop));
+      admin = admin.data();
+
+      let TrackingInfo = tokens.map(t => {
+        return {
+          url: `${blockchainScans[t.blockchain]}${t.tx}`,
+          number: t.tx
+        };
+      });
+
+      await CreateFulfillment(admin, order.fulfillmentOrder_id, TrackingInfo);
+    }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "*");
