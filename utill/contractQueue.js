@@ -27,6 +27,44 @@ const blockScans = {
     "polygonMainnet": "https://polygonscan.com/address/"
 };
 
+async function biconomySetup(data) {
+    let r = await axios({
+        url: 'https://api.biconomy.io/api/v1/smart-contract/public-api/addContract',
+        method: "POST",
+        headers: {
+            authToken: process.env.BICONIMY_DASH_KEY,
+            apiKey: process.env.BICONIMY_API_KEY
+        },
+        data: {
+            contractName: data.contractName,
+            contractAddress: data.contractAddress,
+            abi: JSON.stringify(data.CA.abi),
+            contractType: "SC",
+            metaTransactionType: "TRUSTED_FORWARDER"
+        }
+    });
+
+    console.log(r.data);
+
+    r = await axios({
+        url: 'https://api.biconomy.io/api/v1/meta-api/public-api/addMethod',
+        method: "POST",
+        headers: {
+            authToken: process.env.BICONIMY_DASH_KEY,
+            apiKey: process.env.BICONIMY_API_KEY
+        },
+        data: {
+            apiType: "native",
+            methodType: "write",
+            name: data.filename,
+            contractAddress: data.contractAddress,
+            method: "createNFT"
+        }
+    });
+
+    console.log(r.data);
+}
+
 contractQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
@@ -49,6 +87,15 @@ contractQueue.process(5, async function (job, done) {
 
         const contractArtifact =
             await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
+
+        if (contract.biconomy) {
+            await biconomySetup({
+                CA: JSON.parse(contractArtifact.toString()),
+                contractAddress: deployedData.contractAddress,
+                filename: job.data.filename,
+                contractName: contract.contractName,
+            });
+        }
 
         const storage = getStorage();
         const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
