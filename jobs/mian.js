@@ -18,9 +18,14 @@ async function processContract(data, job) {
     let gasPrice = r1.data['fast'] * 1000000000;
     gasPrice = Math.round(gasPrice);
 
+    let supply = data.contract.tokens[0].number;
+
+    if (data.contract?.type == "multi-asset") {
+        supply = data.contract.tokens.reduce((acc, curr) => acc + curr.number, 0);
+    }
 
     await createContract(data.filename, data.contract.contractName,
-        data.contract.contractSymbol, data.contract.tokens[0].number,
+        data.contract.contractSymbol, supply,
         ["genArtContract", "multi-asset"].indexOf(data.contract?.type) > -1,
         data.contract
     );
