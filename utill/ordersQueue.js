@@ -108,11 +108,17 @@ async function retryGETRisk(client, job) {
 }
 
 async function createOrder(jobData, orderId, orderStatus) {
-    let items = jobData.items;
+    let items = [];
     let shop = jobData.shop;
     let buyer = jobData.buyer;
     let fulfillmentOrder_id = jobData.fulfillmentOrder.id;
     let RandomId = null;
+
+    jobData.items.forEach(item => {
+        for (let i = 0; i < item.quantity; i++) {
+            items.push(item);
+        }
+    });
 
     let contracts = await Promise.map(items, async (item) => {
         let contract = await getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
@@ -143,21 +149,19 @@ async function createOrder(jobData, orderId, orderStatus) {
         let token = contracts[idx].tokenToMint;
         if (contracts[idx]?.type == "multi-asset")
             token = contracts[idx].RandomToken;
-        for (let i = 0; i < item.quantity; i++) {
-            newItems.push({
-                name: item.name,
-                price: item.price,
-                tokenMeta: token.metaData,
-                filename: token.filename,
-                contractAddress: contracts[idx].contractAddress,
-                contractName: contracts[idx].contractName,
-                shop: contracts[idx].shop,
-                blockchain: contracts[idx].blockchain,
-                RandomId: contracts[idx].RandomId || false,
-                type: contracts[idx]?.type,
-                biconomy: contracts[idx]?.biconomy,
-            });
-        }
+        newItems.push({
+            name: item.name,
+            price: item.price,
+            tokenMeta: token.metaData,
+            filename: token.filename,
+            contractAddress: contracts[idx].contractAddress,
+            contractName: contracts[idx].contractName,
+            shop: contracts[idx].shop,
+            blockchain: contracts[idx].blockchain,
+            RandomId: contracts[idx].RandomId || false,
+            type: contracts[idx]?.type,
+            biconomy: contracts[idx]?.biconomy,
+        });
     });
     let UUID = v4();
     let password = generator.generate({
