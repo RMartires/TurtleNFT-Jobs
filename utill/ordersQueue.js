@@ -159,8 +159,8 @@ async function createOrder(jobData, orderId, orderStatus) {
             shop: contracts[idx].shop,
             blockchain: contracts[idx].blockchain,
             RandomId: contracts[idx].RandomId || false,
-            type: contracts[idx]?.type,
-            biconomy: contracts[idx]?.biconomy,
+            type: contracts[idx]?.type || false,
+            biconomy: contracts[idx]?.biconomy || false,
         });
     });
     let UUID = v4();
