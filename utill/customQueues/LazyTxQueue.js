@@ -60,48 +60,78 @@ LazyTxQueue.process(5, async function (job, done) {
 
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
+            let updatedTokens = order.tokens;
             let abi = JSON.parse(files[tdx].data.result);
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+            console.log(nonce);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
-            console.log(gasPrice);
 
-            let tx = await contractInstance["mint(uint256)"](1,
-                {
-                    gasPrice: ethers.BigNumber.from(gasPrice),
-                    nonce: nonce
+            let tx = null;
+            let tokenID = null;
+
+            console.log(token.status, token.tokenID);
+            if (token.status != "minted" && token.status != "transfered") {
+                console.log("mintblock");
+                tx = await contractInstance["mint(uint256)"](1,
+                    {
+                        gasPrice: ethers.BigNumber.from(gasPrice),
+                        nonce: nonce
+                    });
+
+                await tx.wait();
+                job.progress(50);
+
+                tokenID = await new Promise((res, rej) => {
+                    contractInstance.on("Transfer", (from, to, tokenId) => {
+                        console.log(from, to, tokenId);
+                        res(parseInt(tokenId._hex));
+                    });
                 });
 
-            await tx.wait();
-            job.progress(50);
-
-            let tokenID = await new Promise((res, rej) => {
-                contractInstance.on("Transfer", (from, to, tokenId) => {
-                    console.log(from, to, tokenId);
-                    res(parseInt(tokenId._hex));
+                updatedTokens[tdx].status = "minted";
+                updatedTokens[tdx].tokenID = tokenID;
+                await updateDoc(doc(db, "orders", job.data.orderId), {
+                    tokens: updatedTokens,
                 });
-            });
+            }
 
-            tx = await contractInstance["safeTransferFrom(address,address,uint256)"]
-                (process.env.Public_KEY, order.buyerWallet, tokenID, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce + 1 });
+            nonce = await provider.getTransactionCount(process.env.Public_KEY);
+            console.log(nonce);
 
-            job.log(`minted: ${tokenID} ${tx.hash}`);
+            if (token.status != "transfered") {
+                console.log("transferblock");
+                console.log(updatedTokens[tdx].tokenID);
+                tx = await contractInstance["safeTransferFrom(address,address,uint256)"]
+                    (process.env.Public_KEY, order.buyerWallet, updatedTokens[tdx].tokenID, { gasPrice: ethers.BigNumber.from(gasPrice), nonce: nonce });
+
+                updatedTokens[tdx].status = "transfered";
+                updatedTokens[tdx].hash = tx.hash;
+                await updateDoc(doc(db, "orders", job.data.orderId), {
+                    tokens: updatedTokens,
+                });
+
+            }
+
+            job.log(`minted: ${updatedTokens[tdx].tokenID} ${updatedTokens[tdx].tx}`);
             return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
         }, { concurrency: 1 });
 
+        order = await getDoc(doc(db, "orders", job.data.orderId));
+        order = order.data();
+
         await updateDoc(doc(db, "orders", job.data.orderId), {
-            tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tokenID })),
             progress: 'transfered',
-            TrackingNumbers: txs.map((tx) => tx.tx.hash)
+            TrackingNumbers: order.tokens.map((t) => t.hash)
         });
 
-        let TrackingInfo = txs.map((tx) => ({
-            number: tx.tx.hash,
-            url: `${blockchainScans[tx.blockchain]}${tx.tx.hash}`,
+        let TrackingInfo = order.tokens.map((t) => ({
+            number: t.hash,
+            url: `${blockchainScans[t.blockchain]}${t.hash}`,
             company: 'Funggy NFT Minter'
         }));
 
