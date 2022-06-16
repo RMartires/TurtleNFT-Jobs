@@ -143,6 +143,10 @@ transferQueue.process(5, async function (job, done) {
         job.progress(100);
         done();
     } catch (err) {
+        await updateDoc(doc(db, "orders", job.data.orderId), {
+            progress: 'failed',
+        });
+        job.log(err);
         console.log(err);
         done(new Error(err.message));
     }

@@ -60,16 +60,15 @@ LazyTxQueue.process(5, async function (job, done) {
 
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
-            let abi = files[tdx].data.abi;
+            let abi = JSON.parse(files[tdx].data.result);
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
             let nonce = await provider.getTransactionCount(process.env.Public_KEY);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
             let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-            console.log(order.buyerWallet);
-
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
+            console.log(gasPrice);
 
             let tx = await contractInstance["mint(uint256)"](1,
                 {
