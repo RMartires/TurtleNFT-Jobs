@@ -11,6 +11,7 @@ const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require(".
 const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
 const { ChangePlan } = require("../controllers/plans");
+const { sendOrderEmail } = require("../controllers/sendOrderEmail");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
 const { transferQueue, CreateFulfillment } = require('../utill/transferQueue');
@@ -222,6 +223,8 @@ router.post('/ordersCreate', async function (req, res) {
     }
   }
 });
+
+router.post('/sendOrderEmail', sendOrderEmail);
 
 router.post('/uninstall', uninstall);
 // router.post('/PlanChange', PlanChangeWH);
