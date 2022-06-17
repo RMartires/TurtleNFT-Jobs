@@ -240,7 +240,7 @@ router.get('/transfer', async function (req, res) {
     let order = await getDoc(doc(db, "orders", req.query.orderId));
     order = order.data();
 
-    if (order.shop == "desert-farms.myshopify.com") {
+    if (order.shop == "desert-farms.myshopify.com" || order.env == "dev") {
       LazyTxQueue.add({
         ...req.query
       }, {
