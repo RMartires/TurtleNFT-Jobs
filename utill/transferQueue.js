@@ -69,6 +69,10 @@ transferQueue.process(5, async function (job, done) {
 
         job.progress(50);
 
+        let nonce = null;
+        let updatedTokens = order.tokens;
+        let tx = null;
+        let tokenID = null;
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
 
@@ -90,7 +94,8 @@ transferQueue.process(5, async function (job, done) {
 
             let abi = files[tdx].data.abi;
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
-            let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+            if (tdx == 0)
+                nonce = await provider.getTransactionCount(process.env.Public_KEY);
             console.log(nonce);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -100,18 +105,30 @@ transferQueue.process(5, async function (job, done) {
             let r1 = await axios.get(gasStation[token.blockchain]);
             let gasPrice = r1.data['fast'] * 1000000000;
 
-            let tx = await contractInstance[mintFunction](...mintArgs,
-                {
-                    gasPrice: ethers.BigNumber.from(gasPrice),
-                    nonce: nonce
+
+            if (updatedTokens[tdx].status != "minted") {
+                tx = await contractInstance[mintFunction](...mintArgs,
+                    {
+                        gasPrice: ethers.BigNumber.from(gasPrice),
+                        nonce: nonce
+                    });
+
+                tokenID = await new Promise((res, rej) => {
+                    contractInstance.on("ValueChanged", (author, newValue, event) => {
+                        res(parseInt(newValue._hex));
+                    });
                 });
 
-            let tokenID = await new Promise((res, rej) => {
-                contractInstance.on("ValueChanged", (author, newValue, event) => {
-                    res(parseInt(newValue._hex));
+                updatedTokens[tdx].status = "minted";
+                await updateDoc(doc(db, "orders", job.data.orderId), {
+                    tokens: updatedTokens,
                 });
-            });
+
+                nonce += 1;
+            }
+
             job.log(`minted: ${tokenID} ${tx.hash}`);
+            provider.polling = false;
             return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
         }, { concurrency: 1 });
 

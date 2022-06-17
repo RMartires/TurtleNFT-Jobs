@@ -129,7 +129,6 @@ LazyTxQueue.process(5, async function (job, done) {
                 nonce += 1;
             }
 
-            console.log(updatedTokens[tdx]);
             job.log(`minted: ${updatedTokens[tdx].tokenID} ${updatedTokens[tdx].hash}`);
             provider.polling = false;
             return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
