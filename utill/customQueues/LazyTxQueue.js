@@ -38,6 +38,12 @@ const blockchainScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
 };
 
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
 LazyTxQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
@@ -58,12 +64,15 @@ LazyTxQueue.process(5, async function (job, done) {
 
         job.progress(33);
 
+        let nonce = null;
+        let updatedTokens = order.tokens;
+        let tokenID = null;
 
         let txs = await Promise.map(order.tokens, async (token, tdx) => {
-            let updatedTokens = order.tokens;
             let abi = JSON.parse(files[tdx].data.result);
             let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
-            let nonce = await provider.getTransactionCount(process.env.Public_KEY);
+            if (tdx == 0)
+                nonce = await provider.getTransactionCount(process.env.Public_KEY);
             console.log(nonce);
 
             let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -72,7 +81,6 @@ LazyTxQueue.process(5, async function (job, done) {
             let gasPrice = r1.data['fast'] * 1000000000;
 
             let tx = null;
-            let tokenID = null;
 
             console.log(token.status, token.tokenID);
             if (token.status != "minted" && token.status != "transfered") {
@@ -84,12 +92,15 @@ LazyTxQueue.process(5, async function (job, done) {
                     });
 
                 await tx.wait();
-                job.progress(50);
+                job.progress(((tdx + 1) / order.tokens.length) * 90);
 
                 tokenID = await new Promise((res, rej) => {
                     contractInstance.on("Transfer", (from, to, tokenId) => {
-                        console.log(from, to, tokenId);
-                        res(parseInt(tokenId._hex));
+                        if (from == "0x0000000000000000000000000000000000000000" &&
+                            !updatedTokens.map(t => t.tokenID).includes(parseInt(tokenId._hex))) {
+                            console.log(from, to, tokenId, tdx);
+                            res(parseInt(tokenId._hex));
+                        }
                     });
                 });
 
@@ -98,9 +109,9 @@ LazyTxQueue.process(5, async function (job, done) {
                 await updateDoc(doc(db, "orders", job.data.orderId), {
                     tokens: updatedTokens,
                 });
+                nonce += 1;
             }
 
-            nonce = await provider.getTransactionCount(process.env.Public_KEY);
             console.log(nonce);
 
             if (token.status != "transfered") {
@@ -115,9 +126,12 @@ LazyTxQueue.process(5, async function (job, done) {
                     tokens: updatedTokens,
                 });
 
+                nonce += 1;
             }
 
-            job.log(`minted: ${updatedTokens[tdx].tokenID} ${updatedTokens[tdx].tx}`);
+            console.log(updatedTokens[tdx]);
+            job.log(`minted: ${updatedTokens[tdx].tokenID} ${updatedTokens[tdx].hash}`);
+            provider.polling = false;
             return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
         }, { concurrency: 1 });
 
