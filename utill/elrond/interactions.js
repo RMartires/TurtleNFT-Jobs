@@ -33,7 +33,7 @@ let {
 let {
     account,
     provider,
-    signer, mintAndTransfer,
+    signer,
 } = require('./provider');
 const BigNumber = require('bignumber.js');
 const axios = require("axios");
@@ -64,7 +64,7 @@ async function getLastNonce(nft_collection_id) {
  * @param networkType
  * @returns collection identifier, which acts as smart contract address
  */
-exports.elrondIssueCollectionAndSetRole = async (nftCollectionName, nftCollectionTicker, networkType ) => {
+exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftCollectionName, nftCollectionTicker, networkType ) => {
     // will be refactored
     //configureElrondNetwork(ElrondTypes.Testnet)
     const args = [
@@ -78,6 +78,7 @@ exports.elrondIssueCollectionAndSetRole = async (nftCollectionName, nftCollectio
         BytesValue.fromUTF8('canUpgrade'), BytesValue.fromUTF8('true'),
         BytesValue.fromUTF8('canAddSpecialRoles'), BytesValue.fromUTF8('true'),
     ];
+    console.log(account + "accountets")
     const { argumentsString } = new ArgSerializer().valuesToString(args);
     const data = new TransactionPayload(`issueNonFungible@${argumentsString}`);
     const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(60000000));
@@ -106,7 +107,7 @@ exports.elrondIssueCollectionAndSetRole = async (nftCollectionName, nftCollectio
         }
     });
     // need to save this one
-    await elrondSetRoleForMinting( matches[0])
+    await elrondSetRoleForMinting(account, signer, provider, matches[0])
     return { data: matches[0] };
 
 }
@@ -116,10 +117,10 @@ exports.elrondIssueCollectionAndSetRole = async (nftCollectionName, nftCollectio
  * @param receiverAddress user address in string
  * @returns executes and returns nothing.
  */
-exports.mintAndTransfer =  async (nftCollectionId, receiverAddress) => {
-    const nftNonce = await elrondMintNft(nftCollectionId)
+exports.mintAndTransfer =  async (account, signer, provider,nftCollectionId, receiverAddress) => {
+    const nftNonce = await elrondMintNft(account, signer, provider,nftCollectionId)
     console.log(nftNonce + "afterminting")
-    await elrondTransfer(receiverAddress, [{
+    await elrondTransfer(account, signer, provider,receiverAddress, [{
         id: nftCollectionId,
         nonce: nftNonce,
     }],)
@@ -131,7 +132,7 @@ exports.mintAndTransfer =  async (nftCollectionId, receiverAddress) => {
  * @param nftCollectionId
  * @returns {Promise<void>}
  */
-async function elrondMintNft(nftCollectionId){
+async function elrondMintNft(account, signer, provider, nftCollectionId){
     // Pass collection id, query firestore document with that collectionId and from that get collection name, the image path.
     let nftCollectionName = "random"
     let imagePath = "https://aero.mypinata.cloud/ipfs/QmapHXGPQ2mt3UhRaGUJbAjm3oe8iB4JDSKJsjrDwerQaR/1637875733.png"

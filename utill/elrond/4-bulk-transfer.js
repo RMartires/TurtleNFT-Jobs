@@ -38,7 +38,7 @@ const {
 	signer,
 } = require('./provider');
 const BigNumber = require('bignumber.js');
-exports.elrondTransfer = async (receiver,nfts) => {
+exports.elrondTransfer = async (account, signer, provider,receiver,nfts) => {
 	if (nfts.length == 0) return;
 
 	const args = [
