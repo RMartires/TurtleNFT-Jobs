@@ -38,7 +38,11 @@
     "nodemon": "^2.0.14",
     "raw-body": "^2.4.2",
     "sha1": "^1.1.1",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "@elrondnetwork/dapp-core": "1.0.45",
+    "@elrondnetwork/erdjs": "10.0.0-beta.3",
+    "@elrondnetwork/erdjs-walletcore": "^1.0.0",
+    "fs": "0.0.1-security"
   },
   "scripts": {
     "start": "node ./bin/www",

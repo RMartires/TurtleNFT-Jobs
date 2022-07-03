@@ -5,3 +5,6 @@ cache
 artifacts
 contracts
 modules/genart/layers/**
+.env
+.idea
+elrond-wallet.pem
