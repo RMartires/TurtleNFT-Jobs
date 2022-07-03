@@ -42,7 +42,7 @@ const {UserSigner} = require("@elrondnetwork/erdjs-walletcore/out");
 const {elrondMintNft} = require("./3-mint");
 const {elrondTransfer} = require("./4-bulk-transfer");
 const {elrondSetRoleForMinting} = require("./2-set-roles");
-const {elrondIssueCollectionAndSetRole, mintAndTransfer} = require("./interactions");
+const {mintAndTransfer, elrondIssueCollectionAndSetRole} = require("./interactions");
 const ElrondTypes = {
 	Mainet: 0,
 	Testnet: 1
@@ -115,7 +115,7 @@ async function main() {
 		collectionTicker:"TEST",
 		networkType:ElrondTypes.Testnet
 	}
-	const collectionId = await elrondIssueCollectionAndSetRole(dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet)
+	const collectionId = await elrondIssueCollectionAndSetRole(account, signer, provider, dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet)
 	console.log(collectionId.data)
 
 	//store this collection id, pinata image, since it will be needed with minting, receiver is got from the client frontend (claiming page)
@@ -126,6 +126,6 @@ async function main() {
 		collectionId:collectionId.data,
 		collectionName:dataForCollection.collectionName
 	}
-	await mintAndTransfer(dataForClaiming.collectionId, dataForClaiming.receiver)
+	await mintAndTransfer(account, signer, provider, dataForClaiming.collectionId, dataForClaiming.receiver)
 	console.log("completed")
 })();

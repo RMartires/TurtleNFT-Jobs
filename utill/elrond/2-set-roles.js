@@ -39,7 +39,7 @@ const BigNumber = require('bignumber.js');
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
-exports.elrondSetRoleForMinting= async (nftCollectionId) => {
+exports.elrondSetRoleForMinting= async (account, signer, provider, nftCollectionId) => {
 	const args = [
 		BytesValue.fromUTF8(nftCollectionId),
 		new AddressValue(account.address),
