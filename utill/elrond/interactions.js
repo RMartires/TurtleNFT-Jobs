@@ -78,13 +78,15 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
         BytesValue.fromUTF8('canUpgrade'), BytesValue.fromUTF8('true'),
         BytesValue.fromUTF8('canAddSpecialRoles'), BytesValue.fromUTF8('true'),
     ];
-    console.log(account + "accountets")
+    console.log(account + "accounttest")
     const { argumentsString } = new ArgSerializer().valuesToString(args);
     const data = new TransactionPayload(`issueNonFungible@${argumentsString}`);
     const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(60000000));
+    const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`
+    const responseNonce = (await axios.get(nonceUrl)).data.data.nonce
 
     const tx = new Transaction({
-        nonce: account.getNonceThenIncrement(),
+        nonce: responseNonce,
         receiver: new Address(ESDT_SC_ADDRESS),
         data: data,
         value: Egld.raw(50000000000000000),
@@ -93,7 +95,6 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
 
     await signer.sign(tx);
     const txHash = await tx.send(provider);
-
     await tx.awaitExecuted(provider);
     // adding sleep just to be 100% sure
     await sleep(8000)

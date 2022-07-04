@@ -36,6 +36,7 @@ const {
 	signer,
 } = require('./provider');
 const BigNumber = require('bignumber.js');
+const axios = require("axios");
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -51,9 +52,10 @@ exports.elrondSetRoleForMinting= async (account, signer, provider, nftCollection
 	const { argumentsString } = new ArgSerializer().valuesToString(args);
 	const data = new TransactionPayload(`setSpecialRole@${argumentsString}`);
 	const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(60000000));
-
+	const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`
+	const responseNonce = (await axios.get(nonceUrl)).data.data.nonce
 	const tx = new Transaction({
-		nonce: account.getNonceThenIncrement(),
+		nonce: responseNonce,
 		receiver: new Address(ESDT_SC_ADDRESS),
 		data: data,
 		gasLimit: gasLimit,

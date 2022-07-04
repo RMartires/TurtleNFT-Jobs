@@ -38,6 +38,7 @@ const {
 	signer,
 } = require('./provider');
 const BigNumber = require('bignumber.js');
+const axios = require("axios");
 exports.elrondTransfer = async (account, signer, provider,receiver,nfts) => {
 	if (nfts.length == 0) return;
 
@@ -55,9 +56,10 @@ exports.elrondTransfer = async (account, signer, provider,receiver,nfts) => {
 	const { argumentsString } = new ArgSerializer().valuesToString(args);
 	const data = new TransactionPayload(`MultiESDTNFTTransfer@${argumentsString}`);
 	const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(6000000));
-
+	const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`
+	const responseNonce = (await axios.get(nonceUrl)).data.data.nonce
 	const tx = new Transaction({
-		nonce: account.getNonceThenIncrement(),
+		nonce: responseNonce,
 		receiver: account.address,
 		data: data,
 		gasLimit: gasLimit,
@@ -86,9 +88,10 @@ async function sendMultiNFT(receiver, nfts) {
 	const { argumentsString } = new ArgSerializer().valuesToString(args);
 	const data = new TransactionPayload(`MultiESDTNFTTransfer@${argumentsString}`);
 	const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(6000000));
-
+	const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`
+	const responseNonce = (await axios.get(nonceUrl)).data.data.nonce
 	const tx = new Transaction({
-		nonce: account.getNonceThenIncrement(),
+		nonce: responseNonce,
 		receiver: account.address,
 		data: data,
 		gasLimit: gasLimit,
