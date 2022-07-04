@@ -29,7 +29,7 @@ router.get('/processContract', async function (req, res) {
   try {
     console.log(req.query);
     contractQueue.add(req.query, {
-      attempts: 5,
+      attempts: 1,
     });
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({

@@ -6,6 +6,8 @@ const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { db } = require('../utill/db');
 const { processContract } = require("../jobs/mian");
 const { CreateProductService } = require('../controllers/products');
+const { elrondIssueCollectionAndSetRole } = require("../utill/elrond/interactions");
+const { account, provider, signer } = require("../utill/elrond/provider");
 
 const contractQueue = new Queue('Contract', {
     redis: {
@@ -21,6 +23,11 @@ const createProductQueue = new Queue('Product', {
         password: process.env.REDIS_PASSWORD,
     },
 });
+
+const ElrondTypes = {
+    elrondMainet: 0,
+    elrondTestnet: 1
+}
 
 const blockScans = {
     "polygonTestnet": "https://mumbai.polygonscan.com/address/",
@@ -72,42 +79,62 @@ contractQueue.process(5, async function (job, done) {
         if (!contract.exists()) throw new Error(`Error: contract ${job.data.filename} does not exist`);
         contract = contract.data();
 
-        if (contract.deployedStatus == "published") throw new Error("Error: this contract is already published");
+        // if (contract.deployedStatus == "published") throw new Error("Error: this contract is already published");
 
-        const deployedData = await processContract({
-            contract: contract,
-            filename: job.data.filename
-        }, job);
+        if (contract.blockchain.includes("elrond")) {
 
-        job.progress(50);
+            const dataForCollection = {
+                ipfsPath: "pinata",
+                collectionName: contract.contractName,
+                collectionTicker: "TEST",//?
+                networkType: ElrondTypes[contract.blockchain]
+            }
 
-        await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
-            ...deployedData,
-        });
+            const collectionId = await elrondIssueCollectionAndSetRole(account, signer, provider, dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet);
 
-        const contractArtifact =
-            await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
+            job.progress(50);
 
-        if (contract.biconomy) {
-            await biconomySetup({
-                CA: JSON.parse(contractArtifact.toString()),
-                contractAddress: deployedData.contractAddress,
-                filename: job.data.filename,
-                contractName: contract.contractName,
+            await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
+                contractAddress: collectionId,
             });
+
+        } else {
+
+            const deployedData = await processContract({
+                contract: contract,
+                filename: job.data.filename
+            }, job);
+
+            job.progress(50);
+
+            await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
+                ...deployedData,
+            });
+
+            const contractArtifact =
+                await fs.readFile(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol/${job.data.contractName}.json`);
+
+            if (contract.biconomy) {
+                await biconomySetup({
+                    CA: JSON.parse(contractArtifact.toString()),
+                    contractAddress: deployedData.contractAddress,
+                    filename: job.data.filename,
+                    contractName: contract.contractName,
+                });
+            }
+
+            const storage = getStorage();
+            const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
+            await new Promise((res, rej) => {
+                uploadBytes(storageRef, contractArtifact).then((snapshot) => {
+                    res("Done");
+                }).catch(err => {
+                    rej(err);
+                });
+            });
+            await fs.rm(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol`, { recursive: true });
+
         }
-
-        const storage = getStorage();
-        const storageRef = ref(storage, `artifacts/${job.data.contractName}_${job.data.user}.json`);
-        await new Promise((res, rej) => {
-            uploadBytes(storageRef, contractArtifact).then((snapshot) => {
-                res("Done");
-            }).catch(err => {
-                rej(err);
-            });
-        });
-        await fs.rm(`${__dirname}/../artifacts/contracts/${job.data.filename}.sol`, { recursive: true });
-
 
         createProductQueue.add(job.data, { attempts: 2 });
 
