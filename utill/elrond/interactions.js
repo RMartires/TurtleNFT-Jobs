@@ -20,7 +20,7 @@ const {
     Transaction,
     TypedValue,
     TransactionWatcher, NetworkConfig, U64Value,
-} =  require("@elrondnetwork/erdjs/out");
+} = require("@elrondnetwork/erdjs/out");
 let {
     GATEWAY_URL,
     PEM_PATH,
@@ -38,9 +38,9 @@ let {
 const BigNumber = require('bignumber.js');
 const axios = require("axios");
 const fs = require("fs");
-const {UserSigner} = require("@elrondnetwork/erdjs-walletcore/out");
-const {elrondTransfer} = require("./4-bulk-transfer");
-const {elrondSetRoleForMinting} = require("./2-set-roles");
+const { UserSigner } = require("@elrondnetwork/erdjs-walletcore/out");
+const { elrondTransfer } = require("./4-bulk-transfer");
+const { elrondSetRoleForMinting } = require("./2-set-roles");
 const ElrondTypes = {
     Mainet: 0,
     Testnet: 1
@@ -51,11 +51,11 @@ function sleep(ms) {
 async function getLastNonce(nft_collection_id) {
     const urlFor = `${API_URL}/collections/${nft_collection_id}/nfts?size=1`
     console.log(urlFor)
-    const {data} = await axios.get(urlFor);
+    const { data } = await axios.get(urlFor);
     console.log(data + "getLastNonce");
     console.log(data.length)
     // collection does not have any NFTs
-    if(data.length===0) return 1
+    if (data.length === 0) return 1
     return parseInt(data[0].nonce);
 }
 /** Deployes smart contract, which is used for minting NFTs later. Also issues the role, so after execution everything is ready for minting.
@@ -64,7 +64,7 @@ async function getLastNonce(nft_collection_id) {
  * @param networkType
  * @returns collection identifier, which acts as smart contract address
  */
-exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftCollectionName, nftCollectionTicker, networkType ) => {
+exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftCollectionName, nftCollectionTicker, networkType) => {
     // will be refactored
     //configureElrondNetwork(ElrondTypes.Testnet)
     const args = [
@@ -118,14 +118,15 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
  * @param receiverAddress user address in string
  * @returns executes and returns nothing.
  */
-exports.mintAndTransfer =  async (account, signer, provider,nftCollectionId, receiverAddress) => {
-    const nftNonce = await elrondMintNft(account, signer, provider,nftCollectionId)
-    console.log(nftNonce + "afterminting")
-    await elrondTransfer(account, signer, provider,receiverAddress, [{
+exports.mintAndTransfer = async (account, signer, provider, nftCollectionId, receiverAddress, ipfs) => {
+    const nftData = await elrondMintNft(account, signer, provider, nftCollectionId, ipfs)
+    console.log(nftData.nonce + "afterminting")
+    await elrondTransfer(account, signer, provider, receiverAddress, [{
         id: nftCollectionId,
-        nonce: nftNonce,
+        nonce: nftData.nonce,
     }],)
-    console.log(nftNonce + "aftertransfer")
+    console.log(nftData.nonce + "aftertransfer")
+    return { ...nftData }
 }
 
 /**
@@ -133,10 +134,10 @@ exports.mintAndTransfer =  async (account, signer, provider,nftCollectionId, rec
  * @param nftCollectionId
  * @returns {Promise<void>}
  */
-async function elrondMintNft(account, signer, provider, nftCollectionId){
+async function elrondMintNft(account, signer, provider, nftCollectionId, ipfs) {
     // Pass collection id, query firestore document with that collectionId and from that get collection name, the image path.
     let nftCollectionName = "random"
-    let imagePath = "https://aero.mypinata.cloud/ipfs/QmapHXGPQ2mt3UhRaGUJbAjm3oe8iB4JDSKJsjrDwerQaR/1637875733.png"
+    let imagePath = ipfs
     console.log(nftCollectionId + "used")
     const nonceForName = await getLastNonce(nftCollectionId);
     console.log(nonceForName)
@@ -155,9 +156,11 @@ async function elrondMintNft(account, signer, provider, nftCollectionId){
     const { argumentsString } = new ArgSerializer().valuesToString(args);
     const data = new TransactionPayload(`ESDTNFTCreate@${argumentsString}`);
     const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(6000000));
+    const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`;
+    const responseNonce = (await axios.get(nonceUrl)).data.data.nonce;
 
     const tx = new Transaction({
-        nonce: account.getNonceThenIncrement(),
+        nonce: responseNonce,
         receiver: account.address,
         data: data,
         gasLimit: gasLimit,
@@ -170,5 +173,5 @@ async function elrondMintNft(account, signer, provider, nftCollectionId){
 
     const last_nonce = await getLastNonce(nftCollectionId);
     console.log('Last Nonce: ', last_nonce);
-    return last_nonce
+    return { tx: txHash.toString(), nonce: last_nonce };
 }

@@ -63,8 +63,13 @@ async function processContract(data, job) {
 
     await fs.unlink(`${__dirname}/../contracts/${data.filename}.sol`);
 
+    let metaData = createMetadata(data);
+
+    return { contractAddress: nft.address, ...metaData }
+}
+
+function createMetadata(data) {
     console.log("Creating metadata");
-    job.log("Creating metadata");
     const ExtraFields = ["external_link"];
     let tokenId = 1;
     let tokenToMint = null;
@@ -131,9 +136,9 @@ async function processContract(data, job) {
         });
     }
 
+    return { tokenToMint, IdsToMint, tokenToMint };
 
-    return { tokenToMint: tokenToMint, contractAddress: nft.address, IdsToMint, tokensToMint }
-}
+};
 
 // async function mintToken(contract, data) {
 
@@ -151,3 +156,4 @@ async function processContract(data, job) {
 // }
 
 exports.processContract = processContract;
+exports.createMetadata = createMetadata;

@@ -8,7 +8,8 @@ const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 const config = require('../jobs/utill/config.json');
 const { db } = require('../utill/db');
 const { pinJSON, pinFile } = require('../jobs/utill/pinJSON');
-const { async } = require('node-stream-zip');
+const { mintAndTransfer } = require("../utill/elrond/interactions");
+const { account, provider, signer } = require("../utill/elrond/provider");
 
 Shopify.Context.initialize({
     API_KEY: process.env.SHOPIFY_API_KEY,
@@ -36,101 +37,127 @@ const gasStation = {
 
 const blockchainScans = {
     "polygonMainnet": "https://polygonscan.com/tx/",
-    "polygonTestnet": "https://mumbai.polygonscan.com/tx/"
+    "polygonTestnet": "https://mumbai.polygonscan.com/tx/",
+    "elrondTestnet": "https://testnet-explorer.elrond.com/transactions/",
+    "elrondMainnet": "",
 };
 
 transferQueue.process(5, async function (job, done) {
     console.log(job.data);
     try {
+        let txs = null;
         let order = await getDoc(doc(db, "orders", job.data.orderId));
         if (!order.exists()) throw new Error(`Error: contract ${job.data.orderId} does not exist`);
         order = order.data();
 
-        const storage = getStorage();
-        const ABI_URLs = await Promise.map(order.tokens, (token) => {
-            return getDownloadURL(ref(storage, `artifacts/${token.contractName}_${token.shop.split(".")[0]}.json`));
-        });
-        const files = await Promise.map(ABI_URLs, (url) => {
-            return axios({
-                method: 'get',
-                url: url
+        if (order.tokens[0].blockchain.includes("elrond")) {
+
+            txs = await Promise.map(order.tokens, async (token, tdx) => {
+                const dataForClaiming = {
+                    receiver: 'erd15936k9pw34xyzmcaupyn7lpr7f6p20q50h4wlgemxg7h9zasdfysmhg50z',
+                    collectionId: token.contractAddress,
+                    collectionName: token.contractName,
+                    image: token.tokenMeta.image
+                }
+
+                let data = await mintAndTransfer(account, signer, provider,
+                    dataForClaiming.collectionId,
+                    dataForClaiming.receiver, dataForClaiming.image);
+
+                return { tx: { hash: data.tx }, tokenID: `${token.contractAddress}-${data.nonce}`, blockchain: token.blockchain };
+            }, { concurrency: 1 });
+
+        } else {
+
+            const storage = getStorage();
+            const ABI_URLs = await Promise.map(order.tokens, (token) => {
+                return getDownloadURL(ref(storage, `artifacts/${token.contractName}_${token.shop.split(".")[0]}.json`));
             });
-        });
-
-        job.progress(33);
-
-
-        let ipfsArr = await Promise.map(order.tokens, (token) => {
-            return pinJSON({
-                filename: token.filename,
-                data: token.tokenMeta
+            const files = await Promise.map(ABI_URLs, (url) => {
+                return axios({
+                    method: 'get',
+                    url: url
+                });
             });
-        });
 
-        job.progress(50);
-
-        let nonce = null;
-        let updatedTokens = order.tokens;
-        let tx = null;
-        let tokenID = null;
-
-        let txs = await Promise.map(order.tokens, async (token, tdx) => {
-
-            let hash = ipfsArr[tdx];
-            let URI = `https://ipfs.io/ipfs/${hash}`;
-            let mintArgs = [order.buyerWallet, URI];
-            let mintFunction = "createNFT(address,string)";
+            job.progress(33);
 
 
-            if (token.type == "genArtContract") {
-                mintFunction = "createNFT(address,string,uint256)";
-                let args = await genArtContractSetup(token);
-                mintArgs = [order.buyerWallet, ...args];
-            } else if (token.type == "multi-asset") {
-                mintFunction = "createNFT(address,string,uint256)";
-                let args = [URI, token.RandomId];
-                mintArgs = [order.buyerWallet, ...args];
-            }
+            let ipfsArr = await Promise.map(order.tokens, (token) => {
+                return pinJSON({
+                    filename: token.filename,
+                    data: token.tokenMeta
+                });
+            });
 
-            let abi = files[tdx].data.abi;
-            let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
-            if (tdx == 0)
-                nonce = await provider.getTransactionCount(process.env.Public_KEY);
-            console.log(nonce);
+            job.progress(50);
 
-            let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-            let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
-
-            console.log(mintArgs);
-            let r1 = await axios.get(gasStation[token.blockchain]);
-            let gasPrice = r1.data['fast'] * 1000000000;
+            let nonce = null;
+            let updatedTokens = order.tokens;
+            let tx = null;
+            let tokenID = null;
 
 
-            if (updatedTokens[tdx].status != "minted") {
-                tx = await contractInstance[mintFunction](...mintArgs,
-                    {
-                        gasPrice: ethers.BigNumber.from(gasPrice),
-                        nonce: nonce
+            txs = await Promise.map(order.tokens, async (token, tdx) => {
+
+                let hash = ipfsArr[tdx];
+                let URI = `https://ipfs.io/ipfs/${hash}`;
+                let mintArgs = [order.buyerWallet, URI];
+                let mintFunction = "createNFT(address,string)";
+
+
+                if (token.type == "genArtContract") {
+                    mintFunction = "createNFT(address,string,uint256)";
+                    let args = await genArtContractSetup(token);
+                    mintArgs = [order.buyerWallet, ...args];
+                } else if (token.type == "multi-asset") {
+                    mintFunction = "createNFT(address,string,uint256)";
+                    let args = [URI, token.RandomId];
+                    mintArgs = [order.buyerWallet, ...args];
+                }
+
+                let abi = files[tdx].data.abi;
+                let provider = new ethers.providers.JsonRpcProvider({ url: config[token.blockchain] });
+                if (tdx == 0)
+                    nonce = await provider.getTransactionCount(process.env.Public_KEY);
+                console.log(nonce);
+
+                let wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+                let contractInstance = new ethers.Contract(token.contractAddress, abi, wallet);
+
+                console.log(mintArgs);
+                let r1 = await axios.get(gasStation[token.blockchain]);
+                let gasPrice = r1.data['fast'] * 1000000000;
+
+
+                if (updatedTokens[tdx].status != "minted") {
+                    tx = await contractInstance[mintFunction](...mintArgs,
+                        {
+                            gasPrice: ethers.BigNumber.from(gasPrice),
+                            nonce: nonce
+                        });
+
+                    tokenID = await new Promise((res, rej) => {
+                        contractInstance.on("ValueChanged", (author, newValue, event) => {
+                            res(parseInt(newValue._hex));
+                        });
                     });
 
-                tokenID = await new Promise((res, rej) => {
-                    contractInstance.on("ValueChanged", (author, newValue, event) => {
-                        res(parseInt(newValue._hex));
+                    updatedTokens[tdx].status = "minted";
+                    await updateDoc(doc(db, "orders", job.data.orderId), {
+                        tokens: updatedTokens,
                     });
-                });
 
-                updatedTokens[tdx].status = "minted";
-                await updateDoc(doc(db, "orders", job.data.orderId), {
-                    tokens: updatedTokens,
-                });
+                    nonce += 1;
+                }
 
-                nonce += 1;
-            }
+                job.log(`minted: ${tokenID} ${tx.hash}`);
+                provider.polling = false;
+                return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
 
-            job.log(`minted: ${tokenID} ${tx.hash}`);
-            provider.polling = false;
-            return { tx: tx, tokenID: tokenID, blockchain: token.blockchain };
-        }, { concurrency: 1 });
+            }, { concurrency: 1 });
+
+        }
 
         await updateDoc(doc(db, "orders", job.data.orderId), {
             tokens: order.tokens.map((x, xdx) => ({ ...x, hash: txs[xdx].tx.hash, tokenId: txs[xdx].tokenID })),

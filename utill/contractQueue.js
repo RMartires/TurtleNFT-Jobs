@@ -4,7 +4,7 @@ const axios = require("axios");
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { db } = require('../utill/db');
-const { processContract } = require("../jobs/mian");
+const { processContract, createMetadata } = require("../jobs/mian");
 const { CreateProductService } = require('../controllers/products');
 const { elrondIssueCollectionAndSetRole } = require("../utill/elrond/interactions");
 const { account, provider, signer } = require("../utill/elrond/provider");
@@ -86,16 +86,21 @@ contractQueue.process(5, async function (job, done) {
             const dataForCollection = {
                 ipfsPath: "pinata",
                 collectionName: contract.contractName,
-                collectionTicker: "TEST",//?
+                collectionTicker: "TEST",
                 networkType: ElrondTypes[contract.blockchain]
             }
 
-            const collectionId = await elrondIssueCollectionAndSetRole(account, signer, provider, dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet);
+            const { data } = await elrondIssueCollectionAndSetRole(account, signer, provider, dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet);
+            const metaData = createMetadata({
+                contract: contract,
+                filename: job.data.filename
+            });
 
             job.progress(50);
 
             await updateDoc(doc(db, "contracts", `${job.data.contractName}_${job.data.user}`), {
-                contractAddress: collectionId,
+                contractAddress: data,
+                ...metaData
             });
 
         } else {
