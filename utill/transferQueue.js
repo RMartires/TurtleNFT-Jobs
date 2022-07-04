@@ -62,7 +62,7 @@ transferQueue.process(5, async function (job, done) {
 
                 let data = await mintAndTransfer(account, signer, provider,
                     dataForClaiming.collectionId,
-                    dataForClaiming.receiver, dataForClaiming.image);
+                    dataForClaiming.receiver, dataForClaiming.image, token.blockchain);
 
                 return { tx: { hash: data.tx }, tokenID: `${token.contractAddress}-${data.nonce}`, blockchain: token.blockchain };
             }, { concurrency: 1 });

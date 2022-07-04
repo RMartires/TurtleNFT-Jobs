@@ -118,7 +118,7 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
  * @param receiverAddress user address in string
  * @returns executes and returns nothing.
  */
-exports.mintAndTransfer = async (account, signer, provider, nftCollectionId, receiverAddress, ipfs) => {
+exports.mintAndTransfer = async (account, signer, provider, nftCollectionId, receiverAddress, ipfs, blockchain) => {
     const nftData = await elrondMintNft(account, signer, provider, nftCollectionId, ipfs)
     console.log(nftData.nonce + "afterminting")
     await elrondTransfer(account, signer, provider, receiverAddress, [{
