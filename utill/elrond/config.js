@@ -2,6 +2,12 @@
 // const API_URL = "https://devnet-api.elrond.com";
 // const EXPLORER_URL = 'https://devnet-explorer.elrond.com/transactions/';
 // const CHAIN_ID = "D"
+const GATEWAY_URL_MAINNET = "https://gateway.elrond.com";
+const GATEWAY_URL_TESTNET = "https://testnet-gateway.elrond.com";
+const API_URL_MAINNET = "https://api.elrond.com";
+const API_URL_TESTNET = "https://testnet-api.elrond.com";
+const CHAIN_ID_MAINNET = "1";
+const CHAIN_ID_TESTNET = "T";
 let GATEWAY_URL = "https://testnet-gateway.elrond.com";
 const API_URL = "https://testnet-api.elrond.com";
 const EXPLORER_URL = 'https://testnet-explorer.elrond.com/transactions/';
@@ -26,7 +32,13 @@ const NFT_COLLECTION_ID = 'SVENNFT-8ebca0';  //testnet
 
 module.exports = {
     GATEWAY_URL,
+    GATEWAY_URL_TESTNET,
+    GATEWAY_URL_MAINNET,
     API_URL,
+    API_URL_MAINNET,
+    API_URL_TESTNET,
+    CHAIN_ID_TESTNET,
+    CHAIN_ID_MAINNET,
     EXPLORER_URL,
     CHAIN_ID,
     PEM_PATH,

@@ -8,6 +8,7 @@ const { processContract, createMetadata } = require("../jobs/mian");
 const { CreateProductService } = require('../controllers/products');
 const { elrondIssueCollectionAndSetRole } = require("../utill/elrond/interactions");
 const { account, provider, signer } = require("../utill/elrond/provider");
+const {getProvider} = require("./elrond/provider");
 
 const contractQueue = new Queue('Contract', {
     redis: {
@@ -90,7 +91,7 @@ contractQueue.process(5, async function (job, done) {
                 networkType: ElrondTypes[contract.blockchain]
             }
 
-            const { data } = await elrondIssueCollectionAndSetRole(account, signer, provider, dataForCollection.collectionName, dataForCollection.collectionTicker, ElrondTypes.Testnet);
+            const { data } = await elrondIssueCollectionAndSetRole(account, signer, getProvider(dataForCollection.networkType), dataForCollection.collectionName, dataForCollection.collectionTicker, dataForCollection.networkType);
             const metaData = createMetadata({
                 contract: contract,
                 filename: job.data.filename

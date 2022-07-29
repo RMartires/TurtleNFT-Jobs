@@ -33,7 +33,7 @@ let {
 let {
     account,
     provider,
-    signer,
+    signer, getGatewayUrl, getAPIUrlPath,
 } = require('./provider');
 const BigNumber = require('bignumber.js');
 const axios = require("axios");
@@ -48,8 +48,8 @@ const ElrondTypes = {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function getLastNonce(nft_collection_id) {
-    const urlFor = `${API_URL}/collections/${nft_collection_id}/nfts?size=1`
+async function getLastNonce(nft_collection_id, type) {
+    const urlFor = `${getAPIUrlPath(type)}/collections/${nft_collection_id}/nfts?size=1`
     console.log(urlFor)
     const { data } = await axios.get(urlFor);
     console.log(data + "getLastNonce");
@@ -82,7 +82,7 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
     const { argumentsString } = new ArgSerializer().valuesToString(args);
     const data = new TransactionPayload(`issueNonFungible@${argumentsString}`);
     const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(60000000));
-    const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`
+    const nonceUrl = `${getGatewayUrl(networkType)}/address/${account.address}/nonce`
     const responseNonce = (await axios.get(nonceUrl)).data.data.nonce
 
     const tx = new Transaction({
@@ -100,7 +100,7 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
     await sleep(8000)
     console.log(`${tx.getSender()}`);
     console.log(`${EXPLORER_URL}${txHash.toString()}`);
-    const urlForGettingCollectionIdentifier = `${GATEWAY_URL}/address/${tx.getSender()}/registered-nfts`
+    const urlForGettingCollectionIdentifier = `${getGatewayUrl(networkType)}/address/${tx.getSender()}/registered-nfts`
     const response = (await axios.get(urlForGettingCollectionIdentifier)).data
     const matches = response.data.tokens.filter(element => {
         if (element.indexOf(nftCollectionTicker) !== -1) {
@@ -119,7 +119,7 @@ exports.elrondIssueCollectionAndSetRole = async (account, signer, provider, nftC
  * @returns executes and returns nothing.
  */
 exports.mintAndTransfer = async (account, signer, provider, nftCollectionId, receiverAddress, ipfs, blockchain) => {
-    const nftData = await elrondMintNft(account, signer, provider, nftCollectionId, ipfs)
+    const nftData = await elrondMintNft(account, signer, provider, nftCollectionId, ipfs, blockchain)
     console.log(nftData.nonce + "afterminting")
     await elrondTransfer(account, signer, provider, receiverAddress, [{
         id: nftCollectionId,
@@ -134,7 +134,7 @@ exports.mintAndTransfer = async (account, signer, provider, nftCollectionId, rec
  * @param nftCollectionId
  * @returns {Promise<void>}
  */
-async function elrondMintNft(account, signer, provider, nftCollectionId, ipfs) {
+async function elrondMintNft(account, signer, provider, nftCollectionId, ipfs, type) {
     // Pass collection id, query firestore document with that collectionId and from that get collection name, the image path.
     let nftCollectionName = "random"
     let imagePath = ipfs
@@ -156,7 +156,7 @@ async function elrondMintNft(account, signer, provider, nftCollectionId, ipfs) {
     const { argumentsString } = new ArgSerializer().valuesToString(args);
     const data = new TransactionPayload(`ESDTNFTCreate@${argumentsString}`);
     const gasLimit = GasLimit.forTransfer(data).add(new GasLimit(6000000));
-    const nonceUrl = `${GATEWAY_URL}/address/${account.address}/nonce`;
+    const nonceUrl = `${getGatewayUrl(type)}/address/${account.address}/nonce`;
     const responseNonce = (await axios.get(nonceUrl)).data.data.nonce;
 
     const tx = new Transaction({
@@ -171,7 +171,7 @@ async function elrondMintNft(account, signer, provider, nftCollectionId, ipfs) {
     await tx.awaitExecuted(provider);
     console.log(`${EXPLORER_URL}${txHash.toString()}`);
 
-    const last_nonce = await getLastNonce(nftCollectionId);
+    const last_nonce = await getLastNonce(nftCollectionId, type);
     console.log('Last Nonce: ', last_nonce);
     return { tx: txHash.toString(), nonce: last_nonce };
 }
