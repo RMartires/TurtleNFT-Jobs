@@ -1,7 +1,7 @@
 const Queue = require('bull');
 const fs = require('fs/promises');
 const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
-const { doc, getDoc, updateDoc, setDoc } = require("firebase/firestore");
+const { doc, getDoc, updateDoc, setDoc, increment } = require("firebase/firestore");
 const { getStorage, ref, uploadBytes } = require("firebase/storage");
 const { Promise } = require("bluebird");
 const generator = require("generate-password");
@@ -187,6 +187,16 @@ async function createOrder(jobData, orderId, orderStatus) {
         progress: orderStatus,
         buyer: buyer,
         fulfillmentOrder_id: fulfillmentOrder_id,
+        createdAt: new Date()
+    });
+
+    await Promise.map(items, async (item) => {
+        let contract = await getDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`));
+        contract = contract.data();
+        await updateDoc(doc(db, "contracts", `${item.title}_${shop.split(".")[0]}`), {
+            inventory: increment(-1)
+        });
+        return;
     });
 
     return { UUID: UUID, password: password };
