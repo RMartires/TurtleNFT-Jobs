@@ -2,13 +2,8 @@ const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
 const { doc, getDoc, updateDoc } = require("firebase/firestore");
 const { db } = require('../utill/db');
 
-exports.ChangePlan = async (req, res) => {
+exports.applicationCharge = async (req, res) => {
     try {
-        const plans = {
-            basic: 0,
-            premium: 50,
-            ultimate: 100
-        };
 
         let admin = await getDoc(doc(db, "admins", req.query.shop));
         if (!admin.exists()) throw new Error("Error: no admin");
@@ -20,21 +15,14 @@ exports.ChangePlan = async (req, res) => {
         data = await client.post({
             path: 'recurring_application_charges',
             data: {
-                "recurring_application_charge": (req.query.plan == "basic") ?
-                    {
-                        "name": req.query.plan,
-                        "price": plans[req.query.plan],
-                        "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
-                        "capped_amount": 1,
-                        "terms": "$1 wont be charged",
-                        "test": process.env.TestCharge
-                    } :
-                    {
-                        "name": req.query.plan,
-                        "price": plans[req.query.plan],
-                        "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=${req.query.plan}&host=${admin.host}`,
-                        "test": process.env.TestCharge
-                    }
+                "recurring_application_charge": {
+                    "name": "Fungyy application charge",
+                    "price": 0,
+                    "return_url": `https://turtle-nft.herokuapp.com/?shop=${admin.shop}&plan=applicationCharge&host=${admin.host}`,
+                    "capped_amount": 1000,
+                    "terms": "$1 + (5% NFT sale price) per NFT sold",
+                    "test": process.env.TestCharge
+                }
             },
             type: DataType.JSON,
         });

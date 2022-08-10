@@ -10,7 +10,7 @@ const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../control
 const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
 const { CreateProduct } = require("../controllers/products");
-const { ChangePlan } = require("../controllers/plans");
+const { applicationCharge } = require("../controllers/plans");
 const { sendOrderEmail } = require("../controllers/sendOrderEmail");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
@@ -233,7 +233,7 @@ router.post('/MWCustomerErasure', MWCustomerErasure);
 router.post('/MWShopErasure', MWShopErasure);
 
 router.get('/CreateProduct', CreateProduct);
-router.get('/ChangePlan', ChangePlan);
+router.get('/applicationCharge', applicationCharge);
 
 router.get('/transfer', async function (req, res) {
   try {
