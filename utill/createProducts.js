@@ -66,6 +66,8 @@ exports.createProducts = async (data) => {
     };
 
     const client = new Shopify.Clients.Rest(shopData.shop, shopData.accessToken);
+    const graphQLClient = new Shopify.Clients.Graphql(shopData.shop, shopData.accessToken);
+
     let r = await createProduct(client, {
         "body_html": data.body_html,
         "title": data.title,
@@ -77,6 +79,41 @@ exports.createProducts = async (data) => {
             price: data.price
         }]
     });
+
+    const METAFIELDS_CREATE = `
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          key
+          namespace
+          value
+        }
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+
+    await graphQLClient.query({
+        data: {
+            query: METAFIELDS_CREATE,
+            variables: {
+                metafields: [
+                    {
+                        namespace: "web_3",
+                        key: "nft_variants",
+                        value: JSON.stringify(r.body.product.variants.map(x => `${x.id}`)),
+                        type: "list.single_line_text_field",
+                        ownerId: r.body.product.admin_graphql_api_id
+                    }
+                ]
+            }
+        }
+    });
+
     await client.post({
         path: `products/${r.body.product.id}/images`,
         data: { "image": { attachment: data.image64 } },
