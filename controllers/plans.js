@@ -39,3 +39,42 @@ exports.applicationCharge = async (req, res) => {
         });
     }
 };
+
+
+exports.checkNFTSellerStatus = async (req, res) => {
+    try {
+        let admin = await getDoc(doc(db, "admins", req.query.shop));
+        if (!admin.exists()) throw new Error("Error: no admin");
+        admin = admin.data();
+
+        Shopify.Context.initialize({
+            ...Shopify.Context,
+            API_VERSION: ApiVersion.Unstable
+        });
+        const client = new Shopify.Clients.Graphql(admin.shop, admin.accessToken);
+        client.accessToken
+
+        const r = await client.query({
+            data: {
+                query: `query {
+                    nftSalesEligibility {
+                        sellApproved
+                        reapplyDate
+                    }
+                  }`
+            }
+        });
+
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(201).json({
+            data: r.body.nftSalesEligibilityStatus.sellApproved
+        });
+
+    } catch (err) {
+        console.log(err);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(500).json({
+            err: err.message
+        });
+    }
+};

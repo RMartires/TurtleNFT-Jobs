@@ -1,8 +1,9 @@
 const https = require("https");
 const { createProducts } = require('../utill/createProducts');
-const { doc, getDoc, updateDoc } = require("firebase/firestore");
+const { doc, getDoc, updateDoc, getDocs, query, collection, where } = require("firebase/firestore");
 const { getStorage, ref, getDownloadURL } = require("firebase/storage");
 const axios = require('axios');
+const { Shopify, DataType, ApiVersion } = require('@shopify/shopify-api');
 const { db } = require('../utill/db');
 const { createGif } = require('../utill/createGif');
 
@@ -111,6 +112,60 @@ const CreateProductService = async (user, contractFileName) => {
     });
 
     return;
+};
+
+
+exports.productUpdateWebhook = async (req, res) => {
+    try {
+        // if (!req.auth) throw new Error("Unauthorized");
+        const shop = req.body.shop;
+
+        const gqlId = req.body.product.admin_graphql_api_id;
+        let variants = req.body.product.variants;
+        variants = variants.map(v => v.id);
+
+        let shopData;
+        const querySnapshot = await getDocs(query(collection(db, "admins"), where("shop", "==", shop)));
+        querySnapshot.forEach((doc) => {
+            shopData = doc.data();
+        });
+
+        const graphQLClient = new Shopify.Clients.Graphql(shopData.shop, shopData.accessToken);
+
+        const QUERY_METAFIELDS = `query {
+            metafield(first: 100, owner: "${gqlId}") {
+              edges {
+                node {
+                  namespace
+                  key
+                  value
+                }
+              }
+            }
+          }`;
+
+        let r = await graphQLClient.query({
+            data: {
+                query: QUERY_METAFIELDS
+                // variables: {
+                //     owner: gqlId
+                // }
+            }
+        });
+
+
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(200).json({
+            msg: "recived product update info"
+        });
+
+    } catch (err) {
+        console.log(err);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(500).json({
+            msg: "err"
+        });
+    }
 };
 
 exports.CreateProductService = CreateProductService;
