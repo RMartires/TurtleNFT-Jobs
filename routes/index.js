@@ -9,8 +9,8 @@ const { pinJSON } = require('../jobs/utill/pinJSON');
 const { MWCustomerData, MWCustomerErasure, MWShopErasure } = require("../controllers/mondatory");
 const { fulfillmentNotification, fetchStock, fetchTrackingNumbers } = require("../controllers/fulfillment");
 const { uninstall } = require("../controllers/uninstall");
-const { CreateProduct } = require("../controllers/products");
-const { applicationCharge } = require("../controllers/plans");
+const { CreateProduct, productUpdateWebhook } = require("../controllers/products");
+const { applicationCharge, checkNFTSellerStatus } = require("../controllers/plans");
 const { sendOrderEmail } = require("../controllers/sendOrderEmail");
 const { ordersQueue } = require("../utill/ordersQueue");
 const { contractQueue } = require('../utill/contractQueue');
@@ -226,7 +226,6 @@ router.post('/ordersCreate', async function (req, res) {
 
 router.post('/sendOrderEmail', sendOrderEmail);
 
-router.post('/uninstall', uninstall);
 // router.post('/PlanChange', PlanChangeWH);
 router.post('/MWCustomerData', MWCustomerData);
 router.post('/MWCustomerErasure', MWCustomerErasure);
@@ -234,6 +233,7 @@ router.post('/MWShopErasure', MWShopErasure);
 
 router.get('/CreateProduct', CreateProduct);
 router.get('/applicationCharge', applicationCharge);
+router.get('/checkNFTSellerStatus', checkNFTSellerStatus);
 
 router.get('/transfer', async function (req, res) {
   try {
@@ -284,10 +284,15 @@ router.get('/gen-art', async function (req, res) {
   }
 });
 
+
 router.post('/fulfillment_service/fulfillment_order_notification', fulfillmentNotification);
 
 router.get('/fulfillment_service/fetch_stock.json', fetchStock);
 router.get('/fulfillment_service/fetch_tracking_numbers.json', fetchTrackingNumbers);
 
+//webhooks
+router.post('/product_update', productUpdateWebhook);
+
+router.post('/uninstall', uninstall);
 
 module.exports = router;
